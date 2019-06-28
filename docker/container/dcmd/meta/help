@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+
+CMD_PATH=$1
+CMD_NAME=$2
+
+echo "${CMD_NAME}"
+echo ""
+echo "Commands:"
+for PATH in $(ls "${CMD_PATH}"); do
+    echo "    ${PATH}"
+done

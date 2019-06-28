@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+(cd ../docker && ./build) && ./build && bash -c "$(docker run -i example  meta install-instruction)"
+echo "Created executable ./exa"

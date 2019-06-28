@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+cat << EOF | cat
+#!/usr/bin/env bash
+DCMD_NAME="$(cat /.dcmd-name)"
+DCMD_IMAGE="$(cat /.dcmd-image)"
+EOF
+cat /.executable

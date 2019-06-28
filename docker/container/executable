@@ -1,0 +1,21 @@
+CONFIG_DIR="$HOME/.config/${DCMD_NAME}"
+
+mkdir -p "${CONFIG_DIR}"
+LAST_RUN_FILE="${CONFIG_DIR}/last-run"
+
+if [[ ! -f "${LAST_RUN_FILE}" ]] || [[ $(($(date +%s)-$(cat "${LAST_RUN_FILE}"))) -gt $((60*60)) ]]; then
+    echo "$(date +%s)" > "${LAST_RUN_FILE}"
+    TOKEN=$(curl -s "https://auth.docker.io/token?service=registry.docker.io&scope=repository:${DCMD_IMAGE}:pull" | jq '.token' -r)
+    REMOTE_DIGEST="$(curl -s -I \
+        -H "Accept: application/vnd.docker.distribution.manifest.v2+json" \
+        -H "Authorization: Bearer ${TOKEN}" "https://registry.hub.docker.com/v2/${DCMD_IMAGE}/manifests/latest" | \
+        grep "Docker-Content-Digest:" | cut -d ' ' -f 2 | tr -d '\r')"
+
+    LOCAL_DIGEST="$(docker image inspect "${DCMD_IMAGE}:latest" -f '{{.RepoDigests}}' | cut -d '@' -f 2 | cut -d $']' -f 1)"
+
+    if [[ "${LOCAL_DIGEST}" != "${REMOTE_DIGEST}" ]]; then
+        echo "Update available. Run \"${DCMD_NAME} update\" to update" >&2
+    fi
+fi
+
+docker run -it "${DCMD_IMAGE}" "$@"
