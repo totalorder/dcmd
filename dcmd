@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+if [[ -z "${DCMD_IMAGE}" ]]; then
+    "Environment variable DCMD_IMAGE must be set"
+    exit 1
+fi
+
+TOKEN=$(curl -s "https://auth.docker.io/token?service=registry.docker.io&scope=repository:${DCMD_IMAGE}:pull" | jq '.token' -r)
+REMOTE_DIGEST="$(curl -s -I \
+    -H "Accept: application/vnd.docker.distribution.manifest.v2+json" \
+    -H "Authorization: Bearer ${TOKEN}" "https://registry.hub.docker.com/v2/${DCMD_IMAGE}/manifests/latest" | \
+    grep "Docker-Content-Digest:" | cut -d ' ' -f 2 | tr -d '\r')"
+
+LOCAL_DIGEST="$(docker image inspect "${DCMD_IMAGE}:latest" -f '{{.RepoDigests}}' | cut -d '@' -f 2 | cut -d $']' -f 1)"
+
+echo "Local: Q${LOCAL_DIGEST}Q, remote: Q${REMOTE_DIGEST}QQQQQ XXX"
+if [[ "${LOCAL_DIGEST}" != "${REMOTE_DIGEST}" ]]; then
+    echo "Update available"
+fi
+#docker run -it "${DCMD_IMAGE}" "$@"
