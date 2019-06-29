@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+source /shared/bash-setup
+source /shared/utils
+
+__getopt__help () {
+        [[ ! -z "$1" ]] && echo "$1" >&2
+        cat << EOF >&2
+Usage: __getopt <opts> <longopts> \"\$@\"
+
+Example:
+    OPTS=\$(__getopt ho:v help,output:,verbose "\$@") || exit 1 && eval set -- "\${OPTS}"
+EOF
+        exit 1
+    }
+
+__getopt () {
+    __validate_num_args 2 "$#" "__getopt__help"
+
+    OPTS=$1
+    LONGOPTS=$2
+    shift 2
+
+    # Allow a command to fail with !’s side effect on errexit
+    # Use return value from ${PIPESTATUS[0]}, because ! hosed $?
+    ! getopt --test > /dev/null
+    if [[ ${PIPESTATUS[0]} -ne 4 ]]; then
+        echo '`getopt --test` failed in this environment.' >&2
+        exit 1
+    fi
+
+    # Regarding ! and PIPESTATUS see above
+    # Temporarily store output to be able to check for errors
+    # Activate quoting/enhanced mode (e.g. by writing out “--options”)
+    # Pass arguments only via -- "$@" to separate them correctly
+    ! PARSED=$(getopt --options="${OPTS}" --longoptions="${LONGOPTS}" --name "$0" -- "$@")
+    if [[ ${PIPESTATUS[0]} -ne 0 ]]; then
+        # e.g. return value is 1
+        #  then getopt has complained about wrong arguments to stdout
+        exit 2
+    fi
+
+    # Read getopt’s output this way to handle the quoting right:
+    # eval set -- "${PARSED}"
+    echo "${PARSED}"
+}

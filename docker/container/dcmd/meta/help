@@ -2,10 +2,22 @@
 
 CMD_PATH=$1
 CMD_NAME=$2
+HELP_COMMAND="${CMD_PATH}/.help"
+
+if [[ -f "${HELP_COMMAND}" ]]; then
+    ${HELP_COMMAND} "${CMD_PATH}" "${CMD_NAME}"
+    exit 0
+fi
 
 echo "${CMD_NAME}"
 echo ""
-echo "Commands:"
-for PATH in $(ls "${CMD_PATH}"); do
-    echo "    ${PATH}"
+
+echo "commands:"
+for SUBCMD_PATH in $(ls "${CMD_PATH}"); do
+    HELP_COMMAND="${CMD_PATH}/${SUBCMD_PATH}/.help"
+    if [[ -f "${HELP_COMMAND}" ]]; then
+        echo "    $(${HELP_COMMAND} "${CMD_PATH}/${SUBCMD_PATH}" "${SUBCMD_PATH}" --description-only)"
+    else
+        echo "    ${SUBCMD_PATH}"
+    fi
 done

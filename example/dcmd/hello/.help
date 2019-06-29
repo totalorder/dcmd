@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+source /shared/bash-setup
+source /shared/utils
+source /shared/getopt
+
+__help () {
+    [[ ! -z "$1" ]] && echo "$1" >&2
+    cat << EOF >&2
+Usage: $0 <command-name>
+EOF
+    exit 1
+}
+
+OPTS=$(__getopt  "d" "description-only" "$@") || exit 1 && eval set -- "${OPTS}"
+
+while true; do
+    case "$1" in
+        -d|--description-only)
+            DESCRIPTION_ONLY="y"
+            shift
+            ;;
+        --)
+            shift
+            break
+            ;;
+        *)
+            echo "$0 getopt error"
+            exit 3
+            ;;
+    esac
+done
+
+__validate_num_args 2 "$#" "__help"
+
+CMD_NAME=$2
+echo "${CMD_NAME} - Talk to the world"
+if [[ ! -z "${DESCRIPTION_ONLY:-}" ]]; then
+    exit 0
+fi
+
+echo ""
+echo "commands:"
+echo "    space - Say hello world from space"
+echo "    world - Say hello world"

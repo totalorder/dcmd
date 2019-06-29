@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+EXECUTABLE="/usr/local/bin/$(cat /.dcmd-name)"
+[[ ! -f "${EXECUTABLE}" ]] && ln -s /entrypoint "${EXECUTABLE}"
+
 CMD_PATH="."
 CMD_NAME="$(cat /.dcmd-name)"
 while (($#)); do
@@ -19,7 +22,7 @@ while (($#)); do
 done
 
 if [[ -d "${CMD_PATH}" ]]; then
-    /dcmd/meta/help "${CMD_PATH}" "${CMD_NAME}"
+    dcmd meta help "${CMD_PATH}" "${CMD_NAME}"
     exit 1
 fi
 

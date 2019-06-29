@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+__validate_num_args () {
+    REQUIRED_NUM_ARGS=$1
+    NUM_ARGS=$2
+    if [[ ${NUM_ARGS} -lt ${REQUIRED_NUM_ARGS} ]]; then
+        HELP_CMD="${3:-}"
+        shift
+
+        MESSAGE="error: at least ${REQUIRED_NUM_ARGS} arguments required"
+        if [[ ! -z "${HELP_CMD}" ]]; then
+            ${HELP_CMD} "${MESSAGE}"
+        else
+            echo "${MESSAGE}"
+        fi
+        exit 1
+    fi
+}
