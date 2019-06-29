@@ -41,6 +41,35 @@ if [[ -z "${NO_TOP_LEVEL:-}" ]]; then
     echo ""
 fi
 
+GLOBAL_OPT_PATH="${CMD_PATH}/.global-options"
+if [[ -f "${GLOBAL_OPT_PATH}" ]]; then
+    echo ""
+    echo "global options:"
+
+    IFS=$'\n'
+    for OPT_LINE in $(${GLOBAL_OPT_PATH}); do
+        IFS=' '
+        declare -a OPT_COLUMNS
+        OPT_COLUMNS=(${OPT_LINE})
+        if [[ ${#OPT_COLUMNS[@]} -lt 4 ]]; then
+            echo ".global-options must output lines with at least 4 items separated by space"
+            echo "Example: DRY_RUN -d --dry-run Do a dry run"
+            echo "Invalid line: ${OPT_LINE}"
+            exit 1
+        fi
+
+        VAR_NAME="${OPT_COLUMNS[0]}"
+        OPT="${OPT_COLUMNS[1]}"
+        LONGOPT="${OPT_COLUMNS[2]}"
+        USAGE="${OPT_COLUMNS[@]:3}"
+        LONGOPT_NOPARAM="$(echo "${LONGOPT}" | sed 's/:$//g')"
+
+        echo "    ${OPT}, ${LONGOPT_NOPARAM} ${USAGE}"
+    done
+    unset IFS
+fi
+
+echo ""
 echo "commands:"
 for SUBCMD_PATH in $(ls "${CMD_PATH}"); do
     HELP_COMMAND="${CMD_PATH}/.help.${SUBCMD_PATH}"
