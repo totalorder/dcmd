@@ -1,22 +1,54 @@
 #!/usr/bin/env bash
+source /shared/bash-setup
+source /shared/utils
+
+__meta__help () {
+    [[ ! -z "$1" ]] && echo "$1" >&2
+    cat << EOF >&2
+Usage: help <command-path> <command-name> [--no-top-level]
+EOF
+    exit 1
+}
+
+__validate_num_args 2 "$#" "__meta__help"
 
 CMD_PATH=$1
 CMD_NAME=$2
 HELP_COMMAND="${CMD_PATH}/.help"
 
-if [[ -f "${HELP_COMMAND}" ]]; then
-    ${HELP_COMMAND} "${CMD_PATH}" "${CMD_NAME}"
-    exit 0
-fi
+POSITIONAL=()
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        -n|--no-top-level)
+        NO_TOP_LEVEL="y"
+        shift
+        ;;
+        *)
+        POSITIONAL+=("$1")
+        shift
+        ;;
+    esac
+done
+set -- "${POSITIONAL[@]}"
 
-echo "${CMD_NAME}"
-echo ""
+if [[ -z "${NO_TOP_LEVEL:-}" ]]; then
+    if [[ -f "${HELP_COMMAND}" ]]; then
+        echo "${CMD_NAME} - $(${HELP_COMMAND} "${CMD_PATH}" "${CMD_NAME}")"
+        exit 0
+    fi
+
+    echo "${CMD_NAME}"
+    echo ""
+fi
 
 echo "commands:"
 for SUBCMD_PATH in $(ls "${CMD_PATH}"); do
-    HELP_COMMAND="${CMD_PATH}/${SUBCMD_PATH}/.help"
+    HELP_COMMAND="${CMD_PATH}/.help.${SUBCMD_PATH}"
+    SUBFOLDER_HELP_COMMAND="${CMD_PATH}/${SUBCMD_PATH}/.help"
     if [[ -f "${HELP_COMMAND}" ]]; then
-        echo "    $(${HELP_COMMAND} "${CMD_PATH}/${SUBCMD_PATH}" "${SUBCMD_PATH}" --description-only)"
+        echo "    ${SUBCMD_PATH} - $(${HELP_COMMAND} "${CMD_PATH}/${SUBCMD_PATH}" "${SUBCMD_PATH}" --description-only)"
+    elif [[ -f "${SUBFOLDER_HELP_COMMAND}" ]]; then
+        echo "    ${SUBCMD_PATH} - $(${SUBFOLDER_HELP_COMMAND} "${CMD_PATH}/${SUBCMD_PATH}" "${SUBCMD_PATH}" --description-only)"
     else
         echo "    ${SUBCMD_PATH}"
     fi

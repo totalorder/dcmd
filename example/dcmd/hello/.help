@@ -1,9 +1,8 @@
 #!/usr/bin/env bash
 source /shared/bash-setup
 source /shared/utils
-source /shared/getopt
 
-__help () {
+__hello__help () {
     [[ ! -z "$1" ]] && echo "$1" >&2
     cat << EOF >&2
 Usage: $0 <command-name>
@@ -11,29 +10,25 @@ EOF
     exit 1
 }
 
-OPTS=$(__getopt  "d" "description-only" "$@") || exit 1 && eval set -- "${OPTS}"
-
-while true; do
-    case "$1" in
+POSITIONAL=()
+while [[ $# -gt 0 ]]; do
+    case $1 in
         -d|--description-only)
-            DESCRIPTION_ONLY="y"
-            shift
-            ;;
-        --)
-            shift
-            break
-            ;;
+        DESCRIPTION_ONLY="y"
+        shift
+        ;;
         *)
-            echo "$0 getopt error"
-            exit 3
-            ;;
+        POSITIONAL+=("$1")
+        shift
+        ;;
     esac
 done
+set -- "${POSITIONAL[@]}"
 
-__validate_num_args 2 "$#" "__help"
+__validate_num_args 2 "$#" "__hello__help"
 
 CMD_NAME=$2
-echo "${CMD_NAME} - Talk to the world"
+echo "Talk to the world"
 if [[ ! -z "${DESCRIPTION_ONLY:-}" ]]; then
     exit 0
 fi

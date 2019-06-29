@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+POSITIONAL=()
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        -d|--description-only)
+        DESCRIPTION_ONLY="y"
+        shift
+        ;;
+        *)
+        POSITIONAL+=("$1")
+        shift
+        ;;
+    esac
+done
+set -- "${POSITIONAL[@]}"
+
+CMD_PATH=$1
+CMD_NAME=$2
+echo "dcmd management features"
+
+if [[ ! -z "${DESCRIPTION_ONLY:-}" ]]; then
+    exit 0
+fi
+
+dcmd meta help "${CMD_PATH}" "${CMD_NAME}" --no-top-level
