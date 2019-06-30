@@ -1,3 +1,3 @@
 #!/usr/bin/env bash
-./build && bash -c "$(docker run -i dcmd meta install-instruction)"
+./build && bash -c "$(docker run -i dcmd meta install-instructions)"
 echo "Created executable ./dcmd"

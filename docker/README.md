@@ -1,1 +1,1 @@
-./build && bash -c "$(./run meta install-instruction)" && ./dcmd
+./build && ./setup && ./dcmd
