@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+./build
+docker tag dcmd totalorder/dcmd:latest
+docker push totalorder/dcmd:latest
