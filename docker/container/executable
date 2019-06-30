@@ -18,9 +18,14 @@ if [[ ! -f "${LAST_RUN_FILE}" ]] || [[ $(($(date +%s)-$(cat "${LAST_RUN_FILE}"))
     fi
 fi
 
+SSH_KNOWN_HOSTS_OPTIONS=""
+if [[ -f "$HOME/.ssh/known_hosts" ]]; then
+    SSH_KNOWN_HOSTS_OPTIONS="--volume $HOME/.ssh/known_hosts:/root/.ssh/known_hosts"
+fi
+
 SSH_AGENT_OPTIONS=""
 if [[ ! -z "${SSH_AUTH_SOCK}" ]]; then
     SSH_AGENT_OPTIONS="--volume ${SSH_AUTH_SOCK}:/ssh-agent --env SSH_AUTH_SOCK=/ssh-agent"
 fi
 
-docker run ${SSH_AGENT_OPTIONS} -it "${DCMD_IMAGE}" "$@"
+docker run -it ${SSH_KNOWN_HOSTS_OPTIONS} ${SSH_AGENT_OPTIONS} "${DCMD_IMAGE}" "$@"
