@@ -22,4 +22,4 @@ if [[ ! -z "${DESCRIPTION_ONLY:-}" ]]; then
     exit 0
 fi
 
-dcmd meta help "${CMD_PATH}" "${CMD_NAME}" --no-top-level
+dcmd meta help "${CMD_PATH}" "${CMD_NAME}" --no-header

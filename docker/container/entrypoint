@@ -81,9 +81,24 @@ while (($#)); do
     fi
 done
 
+# Print the help if the selected command is a folder
 if [[ -d "${CMD_PATH}" ]]; then
     dcmd meta help "${CMD_PATH}" "${CMD_NAME}"
-    exit 1
+fi
+
+# Exit if the selected command does not exist
+if [[ ! -f "${CMD_PATH}" ]]; then
+    # Return exit code 1 and error message if unconsumed arguments still exist
+    if [[ ! -z "${1:-}" ]]; then
+        echo ""
+        if [[ ${1:0:1} == "-" ]]; then
+            echo "error: Unknown option \"${CMD_NAME} $1\""
+        else
+            echo "error: Unknown command \"${CMD_NAME} $1\""
+        fi
+        exit 1
+    fi
+    exit 0
 fi
 
 ${CMD_PATH} "$@"

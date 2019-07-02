@@ -5,7 +5,7 @@ source /shared/utils
 __meta__help () {
     [[ ! -z "$1" ]] && echo "$1" >&2
     cat << EOF >&2
-Usage: help <command-path> <command-name> [--no-top-level]
+Usage: help <command-path> <command-name> [--no-header]
 EOF
     exit 1
 }
@@ -19,8 +19,8 @@ HELP_COMMAND="${CMD_PATH}/.help"
 POSITIONAL=()
 while [[ $# -gt 0 ]]; do
     case $1 in
-        -n|--no-top-level)
-        NO_TOP_LEVEL="y"
+        -n|--no-header)
+        NO_HEADER="y"
         shift
         ;;
         *)
@@ -31,14 +31,13 @@ while [[ $# -gt 0 ]]; do
 done
 set -- "${POSITIONAL[@]}"
 
-if [[ -z "${NO_TOP_LEVEL:-}" ]]; then
+if [[ -z "${NO_HEADER:-}" ]]; then
     if [[ -f "${HELP_COMMAND}" ]]; then
         echo "${CMD_NAME} - $(${HELP_COMMAND} "${CMD_PATH}" "${CMD_NAME}")"
         exit 0
     fi
 
     echo "${CMD_NAME}"
-    echo ""
 fi
 
 GLOBAL_OPT_PATH="${CMD_PATH}/.options"
