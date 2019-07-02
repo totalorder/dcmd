@@ -1,10 +1,21 @@
 #!/usr/bin/env bash
+source /shared/bash-setup
 
-EXECUTABLE="/usr/local/bin/$(cat /.dcmd-name)"
+if [[ -z "${DCMD_NAME:-}" ]]; then
+    echo "DCMD_NAME must be set" >&2
+    exit 1
+fi
+
+if [[ -z "${DCMD_IMAGE:-}" ]]; then
+    echo "DCMD_IMAGE must be set" >&2
+    exit 1
+fi
+
+EXECUTABLE="/usr/local/bin/${DCMD_NAME}"
 [[ ! -f "${EXECUTABLE}" ]] && ln -s /entrypoint "${EXECUTABLE}"
 
 CMD_PATH="."
-CMD_NAME="$(cat /.dcmd-name)"
+CMD_NAME="${DCMD_NAME}"
 while (($#)); do
     GLOBAL_OPT_PATH="${CMD_PATH}/.global-options"
     if [[ -f "${GLOBAL_OPT_PATH}" ]]; then

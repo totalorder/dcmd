@@ -1,6 +1,8 @@
 FROM alpine:3.7
 
 ARG DOCKER_CLIENT_VERSION="18.09.7"
+ENV DCMD_NAME="dcmd"
+ENV DCMD_IMAGE="dcmd"
 RUN apk add --no-cache bash curl
 RUN curl -fsSLO https://download.docker.com/linux/static/stable/x86_64/docker-${DOCKER_CLIENT_VERSION}.tgz \
   && tar xzvf docker-${DOCKER_CLIENT_VERSION}.tgz --strip 1 \
@@ -12,8 +14,6 @@ RUN ln -s /entrypoint /usr/local/bin/dcmd
 ADD container/dcmd /dcmd
 ADD container/shared /shared
 ADD container/executable /.executable
-RUN echo "dcmd" > /.dcmd-name
-RUN echo "dcmd" > /.dcmd-image
 
 WORKDIR /dcmd
 ENTRYPOINT ["/entrypoint"]

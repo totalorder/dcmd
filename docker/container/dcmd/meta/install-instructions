@@ -1,2 +1,2 @@
 #!/usr/bin/env bash
-echo "docker run -i --rm $(cat /.dcmd-image) meta create-executable > $(cat /.dcmd-name) && chmod +x $(cat /.dcmd-name)"
+echo "docker run -i --rm ${DCMD_IMAGE} meta create-executable > ${DCMD_NAME} && chmod +x ${DCMD_NAME}"

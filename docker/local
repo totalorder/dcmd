@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+export DCMD_EXTRA_DOCKER_OPTIONS="--volume $(pwd)/container/dcmd/:/dcmd"
+./dcmd "$@"

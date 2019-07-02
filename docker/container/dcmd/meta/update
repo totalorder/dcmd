@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 if [[ ! -S "/var/run/docker.sock" ]]; then
     echo "error: Docker not available at /var/run/docker.sock"
-    echo "Run \"docker pull $(cat /.dcmd-image)\" to update"
+    echo "Run \"docker pull ${DCMD_IMAGE}\" to update"
     exit 0
 fi
 
-docker pull $(cat /.dcmd-image)
+docker pull ${DCMD_IMAGE}
 if [[ $? == 0 ]]; then
     echo "Update done"
 else
