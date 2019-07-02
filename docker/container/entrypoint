@@ -17,7 +17,7 @@ EXECUTABLE="/usr/local/bin/${DCMD_NAME}"
 CMD_PATH="."
 CMD_NAME="${DCMD_NAME}"
 while (($#)); do
-    GLOBAL_OPT_PATH="${CMD_PATH}/.global-options"
+    GLOBAL_OPT_PATH="${CMD_PATH}/.options"
     if [[ -f "${GLOBAL_OPT_PATH}" ]]; then
 
         IFS=$'\n'
@@ -26,7 +26,7 @@ while (($#)); do
             declare -a OPT_COLUMNS
             OPT_COLUMNS=(${OPT_LINE})
             if [[ ${#OPT_COLUMNS[@]} -lt 4 ]]; then
-                echo ".global-options must output lines with at least 4 items separated by space"
+                echo ".options must output lines with at least 4 items separated by space"
                 echo "Example: DRY_RUN -d --dry-run Do a dry run"
                 echo "Invalid line: ${OPT_LINE}"
                 exit 1
