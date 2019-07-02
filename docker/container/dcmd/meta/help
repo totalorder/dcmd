@@ -70,14 +70,16 @@ fi
 
 echo ""
 echo "commands:"
+LONGEST_SUBCMD_NAME="$(ls "${CMD_PATH}" | awk '{ print length($1) }' | sort -nr | head -1)"
 for SUBCMD_PATH in $(ls "${CMD_PATH}"); do
     HELP_COMMAND="${CMD_PATH}/.help.${SUBCMD_PATH}"
     SUBFOLDER_HELP_COMMAND="${CMD_PATH}/${SUBCMD_PATH}/.help"
+    PADDED_SUBCMD_PATH="$(printf "%-$((${LONGEST_SUBCMD_NAME} + 2))s" ${SUBCMD_PATH})"
     if [[ -f "${HELP_COMMAND}" ]]; then
-        echo "    ${SUBCMD_PATH} - $(${HELP_COMMAND} "${CMD_PATH}/${SUBCMD_PATH}" "${SUBCMD_PATH}" --description-only)"
+        echo "    ${PADDED_SUBCMD_PATH} $(${HELP_COMMAND} "${CMD_PATH}/${SUBCMD_PATH}" "${SUBCMD_PATH}" --description-only)"
     elif [[ -f "${SUBFOLDER_HELP_COMMAND}" ]]; then
-        echo "    ${SUBCMD_PATH} - $(${SUBFOLDER_HELP_COMMAND} "${CMD_PATH}/${SUBCMD_PATH}" "${SUBCMD_PATH}" --description-only)"
+        echo "    ${PADDED_SUBCMD_PATH} $(${SUBFOLDER_HELP_COMMAND} "${CMD_PATH}/${SUBCMD_PATH}" "${SUBCMD_PATH}" --description-only)"
     else
-        echo "    ${SUBCMD_PATH}"
+        echo "    ${PADDED_SUBCMD_PATH}"
     fi
 done

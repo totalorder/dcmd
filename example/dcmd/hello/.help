@@ -27,6 +27,7 @@ set -- "${POSITIONAL[@]}"
 
 __validate_num_args 2 "$#" "__hello__help"
 
+CMD_PATH=$1
 CMD_NAME=$2
 echo "Talk to the world"
 if [[ ! -z "${DESCRIPTION_ONLY:-}" ]]; then
@@ -35,5 +36,12 @@ fi
 
 echo ""
 echo "commands:"
-echo "    space - Say hello world from space"
-echo "    world - Say hello world"
+echo "    space  Say hello world from space"
+echo "    world  Say hello world"
+for DIRECTORY in $(ls ${CMD_PATH}); do
+    if [[ "${DIRECTORY}" == "space" || "${DIRECTORY}" == "world" ]]; then
+        continue
+    fi
+
+    echo "    ${DIRECTORY}   ???"
+done

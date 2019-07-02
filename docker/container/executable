@@ -67,7 +67,7 @@ fi
 
 DOCKER_SOCKET_OPTIONS=""
 if [[ -S "/var/run/docker.sock" ]]; then
-    DOCKER_SOCKET_OPTIONS="-v /var/run/docker.sock:/var/run/docker.sock"
+    DOCKER_SOCKET_OPTIONS="--volume /var/run/docker.sock:/var/run/docker.sock"
 fi
 
 SSH_KNOWN_HOSTS_OPTIONS=""
@@ -80,4 +80,17 @@ if [[ ! -z "${SSH_AUTH_SOCK:-}" ]]; then
     SSH_AGENT_OPTIONS="--volume ${SSH_AUTH_SOCK}:/ssh-agent --env SSH_AUTH_SOCK=/ssh-agent"
 fi
 
-docker run -it ${DCMD_EXTRA_DOCKER_OPTIONS} ${DOCKER_SOCKET_OPTIONS} ${SSH_KNOWN_HOSTS_OPTIONS} ${SSH_AGENT_OPTIONS} "${DCMD_IMAGE}" "$@"
+if [[ "$(id -u)" == "1000" && "$(id -g)" == "1000" ]]; then
+   USER_OPTIONS="--user 1000:1000"
+elif [[ "$OSTYPE" == "linux-gnu" ]]; then
+    echo "warn: uid doesn't match container. Files written from container will be owned by root" >&2
+fi
+
+docker run -it \
+    ${DCMD_EXTRA_DOCKER_OPTIONS} \
+    ${DOCKER_SOCKET_OPTIONS} \
+    ${SSH_KNOWN_HOSTS_OPTIONS} \
+    ${SSH_AGENT_OPTIONS} \
+    ${USER_OPTIONS} \
+    --volume "$(pwd):/cwd" \
+    "${DCMD_IMAGE}" "$@"

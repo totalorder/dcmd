@@ -12,9 +12,9 @@ if [[ -z "${DCMD_IMAGE:-}" ]]; then
 fi
 
 EXECUTABLE="/usr/local/bin/${DCMD_NAME}"
-[[ ! -f "${EXECUTABLE}" ]] && ln -s /entrypoint "${EXECUTABLE}"
+[[ ! -f "${EXECUTABLE}" ]] && sudo ln -s /entrypoint "${EXECUTABLE}"
 
-CMD_PATH="."
+CMD_PATH="/dcmd"
 CMD_NAME="${DCMD_NAME}"
 while (($#)); do
     GLOBAL_OPT_PATH="${CMD_PATH}/.options"
