@@ -1,0 +1,6 @@
+* Ubuntu :/
+* Docker login?
+* Gcloud
+* Disco
+* es
+* Local config
