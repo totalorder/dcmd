@@ -3,7 +3,12 @@ CONFIG_DIR="$HOME/.config/${DCMD_NAME}"
 mkdir -p "${CONFIG_DIR}"
 LAST_RUN_FILE="${CONFIG_DIR}/last-run"
 
-if [[ ! -f "${LAST_RUN_FILE}" ]] || [[ $(($(date +%s)-$(cat "${LAST_RUN_FILE}"))) -gt $((60*60)) ]]; then
+DOCKER_SOCKET_OPTIONS=""
+if [[ -S "/var/run/docker.sock" ]]; then
+    DOCKER_SOCKET_OPTIONS="-v /var/run/docker.sock:/var/run/docker.sock"
+fi
+
+if true || [[ ! -f "${LAST_RUN_FILE}" ]] || [[ $(($(date +%s)-$(cat "${LAST_RUN_FILE}"))) -gt $((60*60)) ]]; then
     echo "$(date +%s)" > "${LAST_RUN_FILE}"
     TOKEN=$(curl -s "https://auth.docker.io/token?service=registry.docker.io&scope=repository:${DCMD_IMAGE}:pull" | jq '.token' -r)
     REMOTE_DIGEST="$(curl -s -I \
@@ -14,7 +19,12 @@ if [[ ! -f "${LAST_RUN_FILE}" ]] || [[ $(($(date +%s)-$(cat "${LAST_RUN_FILE}"))
     LOCAL_DIGEST="$(docker image inspect "${DCMD_IMAGE}:latest" -f '{{.RepoDigests}}' | cut -d '@' -f 2 | cut -d $']' -f 1)"
 
     if [[ "${LOCAL_DIGEST}" != "${REMOTE_DIGEST}" ]]; then
-        echo "Update available. Run \"eval $(${DCMD_NAME} update)\" to update" >&2
+        UPDATE_MESSAGE="docker pull ${DCMD_IMAGE}"
+        if [[ ! -z "{DOCKER_SOCKET_OPTIONS}" ]]; then
+            UPDATE_MESSAGE="${DCMD_NAME} meta update"
+        fi
+
+        echo "Update available. Run \"${UPDATE_MESSAGE}\" to update" >&2
     fi
 fi
 
@@ -24,8 +34,8 @@ if [[ -f "$HOME/.ssh/known_hosts" ]]; then
 fi
 
 SSH_AGENT_OPTIONS=""
-if [[ ! -z "${SSH_AUTH_SOCK}" ]]; then
+if [[ ! -z "${SSH_AUTH_SOCK:-}" ]]; then
     SSH_AGENT_OPTIONS="--volume ${SSH_AUTH_SOCK}:/ssh-agent --env SSH_AUTH_SOCK=/ssh-agent"
 fi
 
-docker run -it ${SSH_KNOWN_HOSTS_OPTIONS} ${SSH_AGENT_OPTIONS} "${DCMD_IMAGE}" "$@"
+docker run -it ${DOCKER_SOCKET_OPTIONS} ${SSH_KNOWN_HOSTS_OPTIONS} ${SSH_AGENT_OPTIONS} "${DCMD_IMAGE}" "$@"
