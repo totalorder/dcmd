@@ -9,18 +9,20 @@ if [[ -z "${DCMD_IMAGE}}" ]]; then
     exit 1
 fi
 
+RUN_UPDATE=""
+if [[ "$1 $2" == "meta update" ]]; then
+    RUN_UPDATE="y"
+fi
+
 CONFIG_DIR="$HOME/.config/${DCMD_NAME}"
 
 mkdir -p "${CONFIG_DIR}"
-LAST_RUN_FILE="${CONFIG_DIR}/last-run"
+LAST_UPDATE_CHECK_FILE="${CONFIG_DIR}/last-update-check"
 
-DOCKER_SOCKET_OPTIONS=""
-if [[ -S "/var/run/docker.sock" ]]; then
-    DOCKER_SOCKET_OPTIONS="-v /var/run/docker.sock:/var/run/docker.sock"
-fi
-
-if [[ ! -f "${LAST_RUN_FILE}" ]] || [[ $(($(date +%s)-$(cat "${LAST_RUN_FILE}"))) -gt $((60*60)) ]]; then
-    echo "$(date +%s)" > "${LAST_RUN_FILE}"
+if [[ -z "${RUN_UPDATE}" && \
+        (! -f "${LAST_UPDATE_CHECK_FILE}" || \
+        $(($(date +%s)-$(cat "${LAST_UPDATE_CHECK_FILE}"))) -gt $((60*60))) ]]; then
+    echo "$(date +%s)" > "${LAST_UPDATE_CHECK_FILE}"
     TOKEN=$(curl -s "https://auth.docker.io/token?service=registry.docker.io&scope=repository:${DCMD_IMAGE}:pull" | jq '.token' -r)
     REMOTE_DIGEST="$(curl -s -I \
         -H "Accept: application/vnd.docker.distribution.manifest.v2+json" \
@@ -28,14 +30,44 @@ if [[ ! -f "${LAST_RUN_FILE}" ]] || [[ $(($(date +%s)-$(cat "${LAST_RUN_FILE}"))
         grep "Docker-Content-Digest:" | cut -d ' ' -f 2 | tr -d '\r')"
 
     LOCAL_DIGEST="$(docker image inspect "${DCMD_IMAGE}:latest" -f '{{.RepoDigests}}' | cut -d '@' -f 2 | cut -d $']' -f 1)"
-    if [[ "${LOCAL_DIGEST}" != "${REMOTE_DIGEST}" ]]; then
-        UPDATE_MESSAGE="docker pull ${DCMD_IMAGE}"
-        if [[ ! -z "{DOCKER_SOCKET_OPTIONS}" ]]; then
-            UPDATE_MESSAGE="${DCMD_NAME} meta update"
-        fi
 
-        echo "Update available. Run \"${UPDATE_MESSAGE}\" to update" >&2
+    if [[ "${LOCAL_DIGEST}" != "${REMOTE_DIGEST}" ]]; then
+        echo "info: ${DCMD_NAME} update available. Run \"${DCMD_NAME} meta update\" to update"
     fi
+fi
+
+if [[ ! -z "${RUN_UPDATE}" ]]; then
+    echo "Updating ${DCMD_NAME}..."
+    docker pull "${DCMD_IMAGE}:latest"
+    if [[ $? != 0 ]]; then
+        echo "error: Update failed. Could not pull docker image" >&2
+        exit 1
+    fi
+
+    CURRENT_EXECUTABLE="${BASH_SOURCE[0]}"
+    if [[ ! -f "${CURRENT_EXECUTABLE}" ]]; then
+        echo "error: Update failed, could not locate current executable" >&2
+        exit 1
+    fi
+    TARGET_EXECUTABLE_CONTENT="$(docker run -i "${DCMD_IMAGE}" meta create-executable)"
+    if [[ -z "${TARGET_EXECUTABLE_CONTENT}" ]] || [[ "$(echo "${TARGET_EXECUTABLE_CONTENT}" | wc -l)" -lt 10 ]]; then
+        echo "error: Update failed, could get new executable" >&2
+        exit 1
+    fi
+
+    echo "${TARGET_EXECUTABLE_CONTENT}" > "${CURRENT_EXECUTABLE}"
+    if [[ $? != 0 ]]; then
+        echo "error: Update failed. Could not write new executable" >&2
+        exit 1
+    fi
+
+    echo "Update done"
+    exit 0
+fi
+
+DOCKER_SOCKET_OPTIONS=""
+if [[ -S "/var/run/docker.sock" ]]; then
+    DOCKER_SOCKET_OPTIONS="-v /var/run/docker.sock:/var/run/docker.sock"
 fi
 
 SSH_KNOWN_HOSTS_OPTIONS=""

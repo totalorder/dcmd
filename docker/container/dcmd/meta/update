@@ -1,13 +1,3 @@
 #!/usr/bin/env bash
-if [[ ! -S "/var/run/docker.sock" ]]; then
-    echo "error: Docker not available at /var/run/docker.sock"
-    echo "Run \"docker pull ${DCMD_IMAGE}\" to update"
-    exit 0
-fi
-
-docker pull ${DCMD_IMAGE}
-if [[ $? == 0 ]]; then
-    echo "Update done"
-else
-    echo "error: Update failed"
-fi
+echo "error: This should never happen"
+echo "\"${DCMD_NAME} meta update\" should be shadowed by executable"
