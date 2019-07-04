@@ -1,5 +1,12 @@
-FROM dcmd
-RUN apk add --no-cache curl openssh
+ARG BASE_IMAGE="dcmd-alpine:latest"
+FROM ${BASE_IMAGE}
+
+ARG BASE_IMAGE="dcmd-alpine:latest"
+ARG DCMD_IMAGE="example:latest"
+
+# Support installing dependencies in both alpine and ubuntu
+RUN bash -c 'if [[ "${BASE_IMAGE}" == *"-alpine"* ]]; then apk add --no-cache curl openssh-client; else exit 0; fi'
+RUN bash -c 'if [[ "${BASE_IMAGE}" == *"-bionic"* ]]; then apt update && apt install -y curl openssh-client; else exit 0; fi'
 ARG DOCKER_CLIENT_VERSION="18.09.7"
 RUN curl -fsSLO https://download.docker.com/linux/static/stable/x86_64/docker-${DOCKER_CLIENT_VERSION}.tgz \
   && tar xzvf docker-${DOCKER_CLIENT_VERSION}.tgz --strip 1 \
@@ -7,5 +14,5 @@ RUN curl -fsSLO https://download.docker.com/linux/static/stable/x86_64/docker-${
   && rm docker-${DOCKER_CLIENT_VERSION}.tgz
 
 ENV DCMD_NAME="exa"
-ENV DCMD_IMAGE="example"
+ENV DCMD_IMAGE="${DCMD_IMAGE}"
 COPY dcmd /dcmd

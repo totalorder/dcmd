@@ -38,7 +38,8 @@ fi
 
 if [[ ! -z "${RUN_UPDATE}" ]]; then
     echo "Updating ${DCMD_NAME}..."
-    docker pull "${DCMD_IMAGE}:latest"
+    echo "Pulling image ${DCMD_IMAGE}..."
+    docker pull "${DCMD_IMAGE}"
     if [[ $? != 0 ]]; then
         echo "error: Update failed. Could not pull docker image" >&2
         exit 1

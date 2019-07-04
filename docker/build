@@ -1,2 +1,3 @@
 #!/usr/bin/env bash
-docker build -t dcmd .
+DCMD_BASE="${DCMD_BASE:-alpine}"
+docker build --build-arg DCMD_BASE="${DCMD_BASE}" -t "dcmd-${DCMD_BASE}" .

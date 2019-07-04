@@ -1,3 +1,5 @@
 #!/usr/bin/env bash
-./build && bash -c "$(docker run -i example meta install-instructions)"
+DCMD_BASE="${DCMD_BASE:-alpine}"
+DCMD_IMAGE="example-${DCMD_BASE}:latest"
+./build && bash -c "$(docker run -i "${DCMD_IMAGE}" meta install-instructions)"
 echo "Created executable ./exa"

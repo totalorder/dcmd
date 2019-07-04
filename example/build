@@ -1,2 +1,8 @@
 #!/usr/bin/env bash
-docker build -t example .
+DCMD_BASE="${DCMD_BASE:-alpine}"
+DCMD_IMAGE="example-${DCMD_BASE}:latest"
+docker build \
+    --build-arg BASE_IMAGE="dcmd-${DCMD_BASE}:latest" \
+    --build-arg DCMD_IMAGE="${DCMD_IMAGE}" \
+    -t "${DCMD_IMAGE}" .
+
