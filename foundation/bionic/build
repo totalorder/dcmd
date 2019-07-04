@@ -1,0 +1,2 @@
+#!/usr/bin/env bash
+docker build -t dcmd-foundation-bionic .

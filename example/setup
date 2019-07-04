@@ -1,5 +1,14 @@
 #!/usr/bin/env bash
-DCMD_BASE="${DCMD_BASE:-alpine}"
-DCMD_IMAGE="example-${DCMD_BASE}:latest"
-./build && bash -c "$(docker run -i "${DCMD_IMAGE}" meta install-instructions)"
+if [[ -z "$1" ]]; then
+    echo "Usage: ./setup <foundation>"
+    echo ""
+    echo "Example usage:"
+    echo "  ./setup bionic"
+    exit 1
+fi
+
+FOUNDATION=$1
+export DCMD_BASE="dcmd-${FOUNDATION}:latest"
+export DCMD_IMAGE="example-${FOUNDATION}:latest"
+./build && bash -c "$(docker run --rm -i "${DCMD_IMAGE}" meta install-instructions)"
 echo "Created executable ./exa"

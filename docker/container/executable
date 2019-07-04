@@ -29,7 +29,7 @@ if [[ -z "${RUN_UPDATE}" && \
         -H "Authorization: Bearer ${TOKEN}" "https://registry.hub.docker.com/v2/${DCMD_IMAGE}/manifests/latest" | \
         grep "Docker-Content-Digest:" | cut -d ' ' -f 2 | tr -d '\r')"
 
-    LOCAL_DIGEST="$(docker image inspect "${DCMD_IMAGE}:latest" -f '{{.RepoDigests}}' | cut -d '@' -f 2 | cut -d $']' -f 1)"
+    LOCAL_DIGEST="$(docker image inspect "${DCMD_IMAGE}" -f '{{.RepoDigests}}' | cut -d '@' -f 2 | cut -d $']' -f 1)"
 
     if [[ "${LOCAL_DIGEST}" != "${REMOTE_DIGEST}" ]]; then
         echo "info: ${DCMD_NAME} update available. Run \"${DCMD_NAME} meta update\" to update"
@@ -50,7 +50,7 @@ if [[ ! -z "${RUN_UPDATE}" ]]; then
         echo "error: Update failed, could not locate current executable" >&2
         exit 1
     fi
-    TARGET_EXECUTABLE_CONTENT="$(docker run -i "${DCMD_IMAGE}" meta create-executable)"
+    TARGET_EXECUTABLE_CONTENT="$(docker run --rm -i "${DCMD_IMAGE}" meta create-executable)"
     if [[ -z "${TARGET_EXECUTABLE_CONTENT}" ]] || [[ "$(echo "${TARGET_EXECUTABLE_CONTENT}" | wc -l)" -lt 10 ]]; then
         echo "error: Update failed, could get new executable" >&2
         exit 1

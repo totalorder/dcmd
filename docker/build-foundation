@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+if [[ -z "$1" ]]; then
+    echo "Usage: ./build-foundation <foundation>"
+    echo ""
+    echo "Example usage:"
+    echo "  ./build-foundation bionic"
+    exit 1
+fi
+
+FOUNDATION=$1
+(cd "../foundation/${FOUNDATION}" && ./build) && DCMD_FOUNDATION="dcmd-foundation-${FOUNDATION}" DCMD_BASE="dcmd-${FOUNDATION}" ./build

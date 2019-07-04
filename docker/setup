@@ -1,3 +1,13 @@
 #!/usr/bin/env bash
-./build && bash -c "$(docker run -i dcmd meta install-instructions)"
+if [[ -z "$1" ]]; then
+    echo "Usage: ./setup <foundation>"
+    echo ""
+    echo "Example usage:"
+    echo "  ./setup bionic"
+    exit 1
+fi
+
+FOUNDATION=$1
+DCMD_BASE="dcmd-${FOUNDATION}"
+./build-foundation "${FOUNDATION}" && bash -c "$(docker run -i "${DCMD_BASE}" meta install-instructions)"
 echo "Created executable ./dcmd"

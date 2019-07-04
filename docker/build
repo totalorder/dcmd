@@ -1,3 +1,4 @@
 #!/usr/bin/env bash
-DCMD_BASE="${DCMD_BASE:-alpine}"
-docker build --build-arg DCMD_BASE="${DCMD_BASE}" -t "dcmd-${DCMD_BASE}" .
+DCMD_FOUNDATION="${DCMD_FOUNDATION:-dcmd-foundation-alpine}"
+DCMD_BASE="${DCMD_BASE:-dcmd-alpine}"
+docker build --build-arg DCMD_FOUNDATION="${DCMD_FOUNDATION}" --build-arg DCMD_IMAGE="${DCMD_BASE}" -t "${DCMD_BASE}" .

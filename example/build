@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
-DCMD_BASE="${DCMD_BASE:-alpine}"
-DCMD_IMAGE="example-${DCMD_BASE}:latest"
+DCMD_BASE="${DCMD_BASE:-dcmd-alpine:latest}"
+DCMD_IMAGE="${DCMD_IMAGE:-example-alpine:latest}"
+echo "Building image: ${DCMD_IMAGE}"
 docker build \
-    --build-arg BASE_IMAGE="dcmd-${DCMD_BASE}:latest" \
-    --build-arg DCMD_IMAGE="${DCMD_IMAGE}" \
+    --build-arg DCMD_BASE_ARG="${DCMD_BASE}" \
+    --build-arg DCMD_IMAGE_ARG="${DCMD_IMAGE}" \
     -t "${DCMD_IMAGE}" .
 
