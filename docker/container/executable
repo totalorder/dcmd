@@ -23,7 +23,7 @@ if [[ -z "${RUN_UPDATE}" && \
         (! -f "${LAST_UPDATE_CHECK_FILE}" || \
         $(($(date +%s)-$(cat "${LAST_UPDATE_CHECK_FILE}"))) -gt $((60*60))) ]]; then
     echo "$(date +%s)" > "${LAST_UPDATE_CHECK_FILE}"
-    TOKEN=$(curl -s "https://auth.docker.io/token?service=registry.docker.io&scope=repository:${DCMD_IMAGE}:pull" | jq '.token' -r)
+    TOKEN=$(wget -qO-  "https://auth.docker.io/token?service=registry.docker.io&scope=repository:${DCMD_IMAGE}:pull" | cut -d '"' -f 4)
     REMOTE_DIGEST="$(curl -s -I \
         -H "Accept: application/vnd.docker.distribution.manifest.v2+json" \
         -H "Authorization: Bearer ${TOKEN}" "https://registry.hub.docker.com/v2/${DCMD_IMAGE}/manifests/latest" | \

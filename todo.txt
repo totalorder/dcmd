@@ -1,3 +1,4 @@
+* Fix updates for non-docker-hub repos
 * Docker login?
 * Gcloud
 * Disco
