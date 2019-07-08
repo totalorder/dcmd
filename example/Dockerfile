@@ -1,8 +1,8 @@
-ARG DCMD_BASE_ARG="dcmd-alpine:latest"
+ARG DCMD_BASE_ARG="totalorder/dcmd-alpine:latest"
 FROM ${DCMD_BASE_ARG}
 
-ARG DCMD_BASE_ARG="dcmd-alpine:latest"
-ARG DCMD_IMAGE_ARG="example:latest"
+ARG DCMD_BASE_ARG="totalorder/dcmd-alpine:latest"
+ARG DCMD_IMAGE_ARG="totalorder/dcmd-example-alpine:latest"
 
 # Support installing dependencies in both alpine and ubuntu
 RUN bash -c 'if [[ "${DCMD_BASE_ARG}" == *"-alpine"* ]]; then apk add --no-cache curl openssh-client; else exit 0; fi'
