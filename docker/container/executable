@@ -23,10 +23,17 @@ if [[ -z "${RUN_UPDATE}" && \
         (! -f "${LAST_UPDATE_CHECK_FILE}" || \
         $(($(date +%s)-$(cat "${LAST_UPDATE_CHECK_FILE}"))) -gt $((60*60))) ]]; then
     echo "$(date +%s)" > "${LAST_UPDATE_CHECK_FILE}"
-    TOKEN=$(wget -qO-  "https://auth.docker.io/token?service=registry.docker.io&scope=repository:${DCMD_IMAGE}:pull" | cut -d '"' -f 4)
-    REMOTE_DIGEST="$(curl -s -I \
-        -H "Accept: application/vnd.docker.distribution.manifest.v2+json" \
-        -H "Authorization: Bearer ${TOKEN}" "https://registry.hub.docker.com/v2/${DCMD_IMAGE}/manifests/latest" | \
+    DCMD_IMAGE_NO_TAG="$(echo "${DCMD_IMAGE}" | cut -d ':' -f 1)"
+    DCMD_IMAGE_TAG="$(echo "${DCMD_IMAGE}" | cut -d ':' -f 2)"
+    DCMD_IMAGE_TAG="${DCMD_IMAGE_TAG:-latest}"
+
+    TOKEN=$(wget -qO- "https://auth.docker.io/token?service=registry.docker.io&scope=repository:${DCMD_IMAGE_NO_TAG}:pull" | cut -d '"' -f 4)
+
+    REMOTE_DIGEST="$(wget -qO- \
+        --method=GET \
+        --save-headers \
+        --header="Accept: application/vnd.docker.distribution.manifest.v2+json" \
+        --header="Authorization: Bearer ${TOKEN}" "https://registry.hub.docker.com/v2/${DCMD_IMAGE_NO_TAG}/manifests/${DCMD_IMAGE_TAG}" | \
         grep "Docker-Content-Digest:" | cut -d ' ' -f 2 | tr -d '\r')"
 
     LOCAL_DIGEST="$(docker image inspect "${DCMD_IMAGE}" -f '{{.RepoDigests}}' | cut -d '@' -f 2 | cut -d $']' -f 1)"

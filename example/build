@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 DCMD_BASE="${DCMD_BASE:-dcmd-alpine:latest}"
-DCMD_IMAGE="${DCMD_IMAGE:-example-alpine:latest}"
+DCMD_IMAGE="${DCMD_IMAGE:-totalorder/dcmd-example-alpine:latest}"
 echo "Building image: ${DCMD_IMAGE}"
 docker build \
     --build-arg DCMD_BASE_ARG="${DCMD_BASE}" \
