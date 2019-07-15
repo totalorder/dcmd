@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-source shared/bash-setup
+source /shared/bash-setup
 
 if [[ -z "${DCMD_NAME:-}" ]]; then
     echo "DCMD_NAME must be set" >&2
@@ -84,6 +84,12 @@ done
 # Print the help if the selected command is a folder
 if [[ -d "${CMD_PATH}" ]]; then
     dcmd meta help "${CMD_PATH}" "${CMD_NAME}"
+fi
+
+# Error out if selected command is a non-executable file
+if [[ -f "${CMD_PATH}" && ! -x "${CMD_PATH}" ]]; then
+    echo "error: Unknown command \"${CMD_NAME}\""
+    exit 1
 fi
 
 # Exit if the selected command does not exist

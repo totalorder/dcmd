@@ -72,6 +72,11 @@ echo ""
 echo "commands:"
 LONGEST_SUBCMD_NAME="$(ls "${CMD_PATH}" | awk '{ print length($1) }' | sort -nr | head -1)"
 for SUBCMD_PATH in $(ls "${CMD_PATH}"); do
+    # Skip all non-executable files
+    if [[ -f "${CMD_PATH}/${SUBCMD_PATH}" && ! -x "${CMD_PATH}/${SUBCMD_PATH}" ]]; then
+        continue
+    fi
+
     HELP_COMMAND="${CMD_PATH}/.help.${SUBCMD_PATH}"
     SUBFOLDER_HELP_COMMAND="${CMD_PATH}/${SUBCMD_PATH}/.help"
     PADDED_SUBCMD_PATH="$(printf "%-$((${LONGEST_SUBCMD_NAME} + 2))s" ${SUBCMD_PATH})"
