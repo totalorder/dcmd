@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+source /shared/bash-setup
+echo "${DCMD_NAME} version: $(cat /.version)"

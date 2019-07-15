@@ -8,4 +8,4 @@ if [[ -z "$1" ]]; then
 fi
 
 FOUNDATION=$1
-(cd "../foundation/${FOUNDATION}" && ./build) && DCMD_FOUNDATION="dcmd-foundation-${FOUNDATION}" DCMD_BASE="dcmd-${FOUNDATION}" ./build
+(cd "../foundation/${FOUNDATION}" && ./build) && DCMD_FOUNDATION="totalorder/dcmd-foundation-${FOUNDATION}" DCMD_BASE="totalorder/dcmd-${FOUNDATION}" ./build

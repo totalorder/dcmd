@@ -1,2 +1,2 @@
 #!/usr/bin/env bash
-docker build -t dcmd-foundation-bionic .
+docker build -t totalorder/dcmd-foundation-bionic .

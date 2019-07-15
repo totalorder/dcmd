@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 if [[ -z "$1" ]]; then
-    echo "Usage: ./setup <foundation>"
+    echo "Usage: ./push <foundation>"
     echo ""
     echo "Example usage:"
-    echo "  ./setup bionic"
+    echo "  ./push bionic"
     exit 1
 fi
 

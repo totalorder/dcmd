@@ -6,9 +6,9 @@
 # Running docker as current user is a mess, which is why the special
 # user is required: https://jtreminio.com/blog/running-docker-containers-as-current-host-user/
 
-ARG DCMD_FOUNDATION="dcmd-foundation-alpine:latest"
+ARG DCMD_FOUNDATION="totalorder/dcmd-foundation-alpine:latest"
 FROM ${DCMD_FOUNDATION}
-ARG DCMD_IMAGE="dcmd-alpine:latest"
+ARG DCMD_IMAGE="totalorder/dcmd-alpine:latest"
 ENV DCMD_IMAGE="${DCMD_IMAGE}"
 ENV DCMD_NAME="dcmd"
 
@@ -17,6 +17,9 @@ RUN ln -s /entrypoint /usr/local/bin/dcmd
 ADD container/dcmd /dcmd
 ADD container/shared /shared
 ADD container/executable /.executable
+
+ARG DCMD_VERSION="unknown"
+RUN echo "${DCMD_VERSION}" > /.version
 
 WORKDIR /cwd
 ENTRYPOINT ["/entrypoint"]

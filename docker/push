@@ -1,4 +1,11 @@
 #!/usr/bin/env bash
-DCMD_BASE="${DCMD_BASE:-dcmd-alpine}"
-docker tag "${DCMD_BASE}" "totalorder/${DCMD_BASE}:latest"
-docker push "totalorder/${DCMD_BASE}:latest"
+if [[ -z "$1" ]]; then
+    echo "Usage: ./push <foundation>"
+    echo ""
+    echo "Example usage:"
+    echo "  ./push bionic"
+    exit 1
+fi
+FOUNDATION=$1
+DCMD_BASE="${DCMD_BASE:-totalorder/dcmd-${FOUNDATION}}"
+docker push "${DCMD_BASE}:latest"

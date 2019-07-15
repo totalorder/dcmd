@@ -1,4 +1,4 @@
 #!/usr/bin/env bash
-DCMD_FOUNDATION="${DCMD_FOUNDATION:-dcmd-foundation-alpine}"
-DCMD_BASE="${DCMD_BASE:-dcmd-alpine}"
-docker build --build-arg DCMD_FOUNDATION="${DCMD_FOUNDATION}" --build-arg DCMD_IMAGE="${DCMD_BASE}" -t "${DCMD_BASE}" .
+DCMD_FOUNDATION="${DCMD_FOUNDATION:-totalorder/dcmd-foundation-alpine}"
+DCMD_BASE="${DCMD_BASE:-totalorder/dcmd-alpine}"
+docker build --build-arg DCMD_VERSION="${DCMD_BASE}.$(git rev-parse --short HEAD).$(date -u "+%Y-%m-%dT%H:%M:%S")" --build-arg DCMD_FOUNDATION="${DCMD_FOUNDATION}" --build-arg DCMD_IMAGE="${DCMD_BASE}" -t "${DCMD_BASE}" .

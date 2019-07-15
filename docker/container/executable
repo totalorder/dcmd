@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+set -o pipefail
+
+# Exit if all prerequisites are not met
 if [[ -z "${DCMD_NAME}}" ]]; then
     echo "DCMD_NAME must be set" >&2
     exit 1
@@ -14,7 +17,7 @@ if [[ ! $(command -v docker) ]]; then
     exit 1
 fi
 
-if [[ ! $(docker version 2>&1 > /dev/null) ]]; then
+if [[ $(docker version 2>&1 > /dev/null) ]]; then
     echo "docker must be executable by the current user to run ${DCMD_NAME}. Please make sure the current user can run docker (without sudo)" >&2
     exit 1
 fi
@@ -24,89 +27,108 @@ if [[ ! $(command -v wget) ]]; then
     exit 1
 fi
 
-RUN_UPDATE=""
-if [[ "$1 $2" == "meta update" ]]; then
-    RUN_UPDATE="y"
-fi
-
+# Create config dir in ~/.config
 CONFIG_DIR="$HOME/.config/${DCMD_NAME}"
-
 mkdir -p "${CONFIG_DIR}"
+
 LAST_UPDATE_CHECK_FILE="${CONFIG_DIR}/last-update-check"
+UPDATE_LOG_FILE="${CONFIG_DIR}/update.log"
+LAST_UPDATE_FAILED_FILE="${CONFIG_DIR}/last-update-failed"
 
-if [[ -z "${RUN_UPDATE}" && \
-        (! -f "${LAST_UPDATE_CHECK_FILE}" || \
-        $(($(date +%s)-$(cat "${LAST_UPDATE_CHECK_FILE}"))) -gt $((60*60))) ]]; then
-    echo "$(date +%s)" > "${LAST_UPDATE_CHECK_FILE}"
-    DCMD_IMAGE_NO_TAG="$(echo "${DCMD_IMAGE}" | cut -d ':' -f 1)"
-    DCMD_IMAGE_TAG="$(echo "${DCMD_IMAGE}" | cut -d ':' -f 2)"
-    DCMD_IMAGE_TAG="${DCMD_IMAGE_TAG:-latest}"
-
-    TOKEN=$(wget -qO- "https://auth.docker.io/token?service=registry.docker.io&scope=repository:${DCMD_IMAGE_NO_TAG}:pull" | cut -d '"' -f 4)
-
-    REMOTE_DIGEST="$(wget -qO- \
-        --method=GET \
-        --save-headers \
-        --header="Accept: application/vnd.docker.distribution.manifest.v2+json" \
-        --header="Authorization: Bearer ${TOKEN}" "https://registry.hub.docker.com/v2/${DCMD_IMAGE_NO_TAG}/manifests/${DCMD_IMAGE_TAG}" | \
-        grep "Docker-Content-Digest:" | cut -d ' ' -f 2 | tr -d '\r')"
-
-    LOCAL_DIGEST="$(docker image inspect "${DCMD_IMAGE}" -f '{{.RepoDigests}}' | cut -d '@' -f 2 | cut -d $']' -f 1)"
-
-    if [[ -z "${LOCAL_DIGEST}" ]]; then
-        echo "info: Image \"${DCMD_IMAGE}\" has no digest - update check will not work. Maybe it's been built locally and not pulled from a registry?" >&2
-    elif [[ -z "${REMOTE_DIGEST}" ]]; then
-        echo "info: Could not get remote digest of image \"${DCMD_IMAGE}\". Update check will not work." >&2
-    elif [[ "${LOCAL_DIGEST}" != "${REMOTE_DIGEST}" ]]; then
-        echo "info: ${DCMD_NAME} update available. Run \"${DCMD_NAME} meta update\" to update" >&2
+# Increment fail count in LAST_UPDATE_FAILED_FILE
+__update_dcmd_failed() {
+    if [[ ! -f "${LAST_UPDATE_FAILED_FILE}" ]]; then
+        echo "1" > "${LAST_UPDATE_FAILED_FILE}"
+        return 0
     fi
-fi
 
-if [[ ! -z "${RUN_UPDATE}" ]]; then
+    FAIL_COUNT=$(cat "${LAST_UPDATE_FAILED_FILE}")
+    echo $((${FAIL_COUNT} + 1)) > "${LAST_UPDATE_FAILED_FILE}"
+}
+
+# Update dcmd by pulling new image and replacing executable with result of "dcmd meta create-executable"
+# Increments fail count on error and resets it on success
+__update_dcmd() {
     echo "Updating ${DCMD_NAME}..."
     echo "Pulling image ${DCMD_IMAGE}..."
+
     docker pull "${DCMD_IMAGE}"
     if [[ $? != 0 ]]; then
         echo "error: Update failed. Could not pull docker image" >&2
-        exit 1
+        __update_dcmd_failed
+        return 1
     fi
 
     CURRENT_EXECUTABLE="${BASH_SOURCE[0]}"
     if [[ ! -f "${CURRENT_EXECUTABLE}" ]]; then
         echo "error: Update failed, could not locate current executable" >&2
-        exit 1
+        __update_dcmd_failed
+        return 1
     fi
     TARGET_EXECUTABLE_CONTENT="$(docker run --rm -i "${DCMD_IMAGE}" meta create-executable)"
     if [[ -z "${TARGET_EXECUTABLE_CONTENT}" ]] || [[ "$(echo "${TARGET_EXECUTABLE_CONTENT}" | wc -l)" -lt 10 ]]; then
         echo "error: Update failed, could get new executable" >&2
-        exit 1
+        __update_dcmd_failed
+        return 1
     fi
 
     echo "${TARGET_EXECUTABLE_CONTENT}" > "${CURRENT_EXECUTABLE}"
     if [[ $? != 0 ]]; then
         echo "error: Update failed. Could not write new executable" >&2
-        exit 1
+        __update_dcmd_failed
+        return 1
     fi
 
     echo "Update done"
-    exit 0
+
+    # Reset failure count on error
+    if [[ -f "${LAST_UPDATE_FAILED_FILE}" ]]; then
+        rm "${LAST_UPDATE_FAILED_FILE}"
+    fi
+    return 0
+}
+
+# Run update in foreground if "dcmd meta update" is called
+if [[ "$1 $2" == "meta update" ]]; then
+    __update_dcmd | tee "${UPDATE_LOG_FILE}"
+    exit $?
 fi
 
+# Run a silent update every hour, outputting logs into UPDATE_LOG_FILE
+if [[ ! -f "${LAST_UPDATE_CHECK_FILE}" || $(($(date +%s)-$(cat "${LAST_UPDATE_CHECK_FILE}"))) -gt $((60*60)) ]]; then
+    echo "$(date +%s)" > "${LAST_UPDATE_CHECK_FILE}"
+    # Run update as background job
+    __update_dcmd > "${UPDATE_LOG_FILE}" 2>&1 &
+fi
+
+# Warn if update failed more than twice in a row, then reset failure count
+if [[ -f "${LAST_UPDATE_FAILED_FILE}" ]]; then
+    FAIL_COUNT=$(cat "${LAST_UPDATE_FAILED_FILE}")
+    if [[ ${FAIL_COUNT} -gt 1 ]]; then
+        echo "info: Last update of ${DCMD_NAME} failed. Run \"${DCMD_NAME} meta update\" or check ${UPDATE_LOG_FILE} for details." >&2
+        rm "${LAST_UPDATE_FAILED_FILE}"
+    fi
+fi
+
+# Mount docker socket into container if available
 DOCKER_SOCKET_OPTIONS=""
 if [[ -S "/var/run/docker.sock" ]]; then
     DOCKER_SOCKET_OPTIONS="--volume /var/run/docker.sock:/var/run/docker.sock"
 fi
 
+# Mount .ssh/known_hosts into container if available
 SSH_KNOWN_HOSTS_OPTIONS=""
 if [[ -f "$HOME/.ssh/known_hosts" ]]; then
     SSH_KNOWN_HOSTS_OPTIONS="--volume $HOME/.ssh/known_hosts:/root/.ssh/known_hosts"
 fi
 
+# Mount ssh-agent into container if available
 SSH_AGENT_OPTIONS=""
 if [[ ! -z "${SSH_AUTH_SOCK:-}" ]]; then
     SSH_AGENT_OPTIONS="--volume ${SSH_AUTH_SOCK}:/ssh-agent --env SSH_AUTH_SOCK=/ssh-agent"
 fi
 
+# Run as current user if current user has uid:guid 1000:1000
 if [[ "$(id -u)" == "1000" && "$(id -g)" == "1000" ]]; then
    USER_OPTIONS="--user 1000:1000"
 elif [[ "$OSTYPE" == "linux-gnu" ]]; then

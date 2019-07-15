@@ -16,3 +16,6 @@ RUN curl -fsSLO https://download.docker.com/linux/static/stable/x86_64/docker-${
 ENV DCMD_NAME="exa"
 ENV DCMD_IMAGE="${DCMD_IMAGE_ARG}"
 COPY dcmd /dcmd
+
+ARG DCMD_VERSION="unknown"
+RUN echo "${DCMD_VERSION}" > /.version
