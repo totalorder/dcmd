@@ -1,4 +1,5 @@
 * Fix updates for non-docker-hub repos
+* Move example into own repo
 * Docker login?
 * Gcloud
 * Disco

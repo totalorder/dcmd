@@ -9,6 +9,21 @@ if [[ -z "${DCMD_IMAGE}}" ]]; then
     exit 1
 fi
 
+if [[ ! $(command -v docker) ]]; then
+    echo "docker is required to run ${DCMD_NAME}. Please install docker and make sure it's available on your PATH" >&2
+    exit 1
+fi
+
+if [[ ! $(docker version 2>&1 > /dev/null) ]]; then
+    echo "docker must be executable by the current user to run ${DCMD_NAME}. Please make sure the current user can run docker (without sudo)" >&2
+    exit 1
+fi
+
+if [[ ! $(command -v wget) ]]; then
+    echo "wget is required to run ${DCMD_NAME}. Please install wget and make sure it's available on your PATH" >&2
+    exit 1
+fi
+
 RUN_UPDATE=""
 if [[ "$1 $2" == "meta update" ]]; then
     RUN_UPDATE="y"
@@ -38,8 +53,12 @@ if [[ -z "${RUN_UPDATE}" && \
 
     LOCAL_DIGEST="$(docker image inspect "${DCMD_IMAGE}" -f '{{.RepoDigests}}' | cut -d '@' -f 2 | cut -d $']' -f 1)"
 
-    if [[ "${LOCAL_DIGEST}" != "${REMOTE_DIGEST}" ]]; then
-        echo "info: ${DCMD_NAME} update available. Run \"${DCMD_NAME} meta update\" to update"
+    if [[ -z "${LOCAL_DIGEST}" ]]; then
+        echo "info: Image \"${DCMD_IMAGE}\" has no digest - update check will not work. Maybe it's been built locally and not pulled from a registry?" >&2
+    elif [[ -z "${REMOTE_DIGEST}" ]]; then
+        echo "info: Could not get remote digest of image \"${DCMD_IMAGE}\". Update check will not work." >&2
+    elif [[ "${LOCAL_DIGEST}" != "${REMOTE_DIGEST}" ]]; then
+        echo "info: ${DCMD_NAME} update available. Run \"${DCMD_NAME} meta update\" to update" >&2
     fi
 fi
 
