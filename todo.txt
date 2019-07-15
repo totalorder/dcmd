@@ -1,6 +1,3 @@
-* Move example into own repo
 * Docker login?
 * Gcloud
-* Disco
-* es
 * Local config
