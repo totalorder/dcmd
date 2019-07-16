@@ -128,12 +128,19 @@ if [[ ! -z "${SSH_AUTH_SOCK:-}" ]]; then
     SSH_AGENT_OPTIONS="--volume ${SSH_AUTH_SOCK}:/ssh-agent --env SSH_AUTH_SOCK=/ssh-agent"
 fi
 
+# Used by executable-extras to find the users home dir
+DCMD_HOME="/root"
+
 # Run as current user if current user has uid:guid 1000:1000
 if [[ "$(id -u)" == "1000" && "$(id -g)" == "1000" ]]; then
    USER_OPTIONS="--user 1000:1000"
+   DCMD_HOME="/home/dcmd"
 elif [[ "$OSTYPE" == "linux-gnu" ]]; then
     echo "warn: uid doesn't match container. Files written from container will be owned by root" >&2
 fi
+
+# DCMD_EXECUTABLE_EXTRAS_PLACEHOLDER - This line will be replaced by the contents of /.executable-extras in the container
+
 
 docker run -it \
     ${DCMD_EXTRA_DOCKER_OPTIONS} \

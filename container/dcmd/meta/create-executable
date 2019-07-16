@@ -4,4 +4,6 @@ cat << EOF | cat
 DCMD_NAME="${DCMD_NAME}"
 DCMD_IMAGE="${DCMD_IMAGE}"
 EOF
-cat /.executable
+
+cat /.executable | sed -e '/DCMD_EXECUTABLE_EXTRAS_PLACEHOLDER/ {' -e 'r /.executable-extras' -e 'd' -e '}'
+

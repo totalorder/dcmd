@@ -17,6 +17,7 @@ RUN ln -s /entrypoint /usr/local/bin/dcmd
 ADD container/dcmd /dcmd
 ADD container/shared /shared
 ADD container/executable /.executable
+ADD container/executable-extras /.executable-extras
 
 ARG DCMD_VERSION="unknown"
 RUN echo "${DCMD_VERSION}" > /.version
