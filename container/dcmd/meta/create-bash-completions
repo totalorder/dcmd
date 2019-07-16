@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+cat << EOF | cat
+__DCMD_COMPLETION_DIRS="$(find /dcmd -mindepth 1 -type d | xargs)"
+__DCMD_COMPLETION_COMMANDS="$(find /dcmd -mindepth 1 -type f -perm +111 -not -path '*/\.*' | xargs)"
+
+__DCMD_COMPLETION_DIRS="\$(echo "\${__DCMD_COMPLETION_DIRS}" | tr " " "\n")"
+__DCMD_COMPLETION_COMMANDS="\$(echo "\${__DCMD_COMPLETION_COMMANDS}" | tr " " "\n")"
+
+__get_valid_command_dir() {
+    COMP_WORDS=\$1
+    CMD_DIR="/dcmd"
+    for CMD in "\${COMP_WORDS[@]:1}"; do
+        if [[ -z "\${CMD}" ]]; then
+            break
+        fi
+
+        if [[ \$(echo "\${__DCMD_COMPLETION_COMMANDS}" | grep -x "\${CMD_DIR}/\${CMD}") ]]; then
+            return
+        elif [[ \$(echo "\${__DCMD_COMPLETION_DIRS}" | grep -x "\${CMD_DIR}/\${CMD}") ]]; then
+            CMD_DIR="\${CMD_DIR}/\${CMD}"
+        else
+            break
+        fi
+    done
+
+    echo "\${CMD_DIR}"
+}
+
+__get_commands_in_dir() {
+    CMD_DIR=\$1
+    if [[ -z \$1 ]]; then
+        return
+    fi
+    DIR_DEPTH=\$(echo "\${CMD_DIR}" | grep -o "/" | wc -l)
+    echo -e "\${__DCMD_COMPLETION_DIRS}\n\${__DCMD_COMPLETION_COMMANDS}" | grep "\${CMD_DIR}" | cut -d / -f \$((\${DIR_DEPTH} + 2)) | sort | uniq
+}
+
+__dcmd_completions() {
+    COMPREPLY=(\$(compgen -W "\$(__get_commands_in_dir \$(__get_valid_command_dir \${COMP_WORDS}) | xargs)" "\${COMP_WORDS[-1]}"))
+}
+
+complete -F __dcmd_completions "${DCMD_NAME}"
+EOF

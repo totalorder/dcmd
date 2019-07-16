@@ -1,3 +1,0 @@
-* Docker login?
-* Gcloud
-* Local config

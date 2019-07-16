@@ -7,9 +7,17 @@ if [[ -z "$1" ]]; then
     exit 1
 fi
 
+set -e
 FOUNDATION=$1
 DCMD_BASE="totalorder/dcmd-${FOUNDATION}"
-./build-foundation "${FOUNDATION}" && bash -c "$(docker run -i "${DCMD_BASE}" meta install-instructions)"
+
+if [[ $2 != "--no-foundation" ]]; then
+    ./build-foundation "${FOUNDATION}"
+else
+    DCMD_FOUNDATION="totalorder/dcmd-foundation-${FOUNDATION}" DCMD_BASE="totalorder/dcmd-${FOUNDATION}" ./build
+fi
+
+bash -c "$(docker run -i "${DCMD_BASE}" meta install-instructions)"
 if [[ $? == 0 ]]; then
     echo "Created executable ./dcmd"
 else

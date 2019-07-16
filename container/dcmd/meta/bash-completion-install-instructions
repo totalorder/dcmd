@@ -1,0 +1,2 @@
+#!/usr/bin/env bash
+echo "docker run -i --rm ${DCMD_IMAGE} meta create-bash-completion > \$HOME/.config/${DCMD_NAME}/bash-completion ; echo \"Add \\\"source \${HOME}/.config/${DCMD_NAME}/bash-completion\\\" to your .bashrc\""
