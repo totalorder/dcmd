@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+if [[ $1 != "bash" && $1 != "zsh" ]]; then
+    echo "Unsupported completion: $1" >&2
+    echo ""  >&2
+    echo "Usage: create-completion <completion=(bash|zsh)> " >&2
+    exit 1
+fi
+
+cat << EOF | cat
+__DCMD_COMPLETION_DIRS="$(find /dcmd -mindepth 1 -type d | xargs)"
+__DCMD_COMPLETION_COMMANDS="$(find /dcmd -mindepth 1 -type f -perm +111 -not -path '*/\.*' | xargs)"
+EOF
+
+if [[ $1 == "bash" ]]; then
+    cat /.bash-completion
+elif [[ $1 == "zsh" ]]; then
+    cat /.zsh-completion
+fi

@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+if [[ -z "$1" ]]; then
+    echo "Usage: completion-install-instructions <completion=(bash|zsh)> "
+    exit 0
+fi
+
+if [[ $1 != "bash" && $1 != "zsh" ]]; then
+    echo "Unsupported completion: $1" >&2
+    echo ""  >&2
+    echo "Usage: completion-install-instructions <completion=(bash|zsh)> " >&2
+    exit 1
+fi
+
+cat << EOF | cat
+docker run -i --rm ${DCMD_IMAGE} meta create-completion $1 > \$HOME/.config/${DCMD_NAME}/$1-completion
+echo "Add \"source \${HOME}/.config/${DCMD_NAME}/$1-completion\" to your .$1rc to enable completions"
+printf "Do you want to add it automatically? [Y/n]" && read -r response && [[ ! "\${response}" =~ ^([nN][oO]|[nN])+$ ]] && echo -e "\nsource \$HOME/.config/${DCMD_NAME}/$1-completion\n" >> "\$HOME/.$1rc" && echo "Your .$1rc is updated"
+EOF
