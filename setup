@@ -18,8 +18,6 @@ else
 fi
 
 bash -c "$(docker run -i "${DCMD_BASE}" meta install-instructions)"
-if [[ $? == 0 ]]; then
-    echo "Created executable ./dcmd"
-else
+if [[ $? != 0 ]]; then
     echo "Failed to create executable ./dcmd with install instructions: $(docker run -i "${DCMD_BASE}" meta install-instructions)"
 fi

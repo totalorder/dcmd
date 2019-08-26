@@ -1,0 +1,2 @@
+#!/usr/bin/env bash
+dcmd meta help --recursive /dcmd "${DCMD_NAME}"

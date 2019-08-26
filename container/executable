@@ -95,7 +95,7 @@ if [[ "$1 $2" == "meta update" ]]; then
 fi
 
 # Run a silent update every hour, outputting logs into UPDATE_LOG_FILE
-if [[ ! -f "${LAST_UPDATE_CHECK_FILE}" || $(($(date +%s)-$(cat "${LAST_UPDATE_CHECK_FILE}"))) -gt $((60*60)) ]]; then
+if [[ -z "${DCMD_DISABLE_UPDATE:-}" ]] && [[ ! -f "${LAST_UPDATE_CHECK_FILE}" || $(($(date +%s)-$(cat "${LAST_UPDATE_CHECK_FILE}"))) -gt $((60*60)) ]]; then
     echo "$(date +%s)" > "${LAST_UPDATE_CHECK_FILE}"
     # Run update as background job
     __update_dcmd > "${UPDATE_LOG_FILE}" 2>&1 &
@@ -149,4 +149,4 @@ docker run -it \
     ${SSH_AGENT_OPTIONS} \
     ${USER_OPTIONS} \
     --volume "$(pwd):/cwd" \
-    "${DCMD_IMAGE}" "$@"
+    "${DCMD_IMAGE}" "$@" | tr -d '\r' | cat

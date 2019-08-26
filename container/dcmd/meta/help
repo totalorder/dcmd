@@ -5,22 +5,24 @@ source /shared/utils
 __meta__help () {
     [[ ! -z "$1" ]] && echo "$1" >&2
     cat << EOF >&2
-Usage: help <command-path> <command-name> [--no-header]
+Usage: help <command-path> <command-name> [--no-header --recursive]
 EOF
     exit 1
 }
 
 __validate_num_args 2 "$#" "__meta__help"
-
-CMD_PATH=$1
-CMD_NAME=$2
-HELP_COMMAND="${CMD_PATH}/.help"
+NO_HEADER=""
+RECURSIVE=""
 
 POSITIONAL=()
 while [[ $# -gt 0 ]]; do
     case $1 in
         -n|--no-header)
         NO_HEADER="y"
+        shift
+        ;;
+        -r|--recursive)
+        RECURSIVE="y"
         shift
         ;;
         *)
@@ -31,60 +33,121 @@ while [[ $# -gt 0 ]]; do
 done
 set -- "${POSITIONAL[@]}"
 
+CMD_PATH=$1
+CMD_NAME=$2
+HELP_COMMAND="${CMD_PATH}/.help"
+HELP_TEXT_FILE="${CMD_PATH}/.help-txt"
 if [[ -z "${NO_HEADER:-}" ]]; then
     if [[ -f "${HELP_COMMAND}" ]]; then
         echo "${CMD_NAME} - $(${HELP_COMMAND} "${CMD_PATH}" "${CMD_NAME}")"
         exit 0
+    elif [[ -f "${HELP_TEXT_FILE}" ]]; then
+        echo "${CMD_NAME} - $(cat "${HELP_TEXT_FILE}")"
+    else
+        echo "${CMD_NAME}"
     fi
-
-    echo "${CMD_NAME}"
 fi
 
-GLOBAL_OPT_PATH="${CMD_PATH}/.options"
-if [[ -f "${GLOBAL_OPT_PATH}" ]]; then
-    echo ""
-    echo "global options:"
+if [[ -z "${RECURSIVE:-}" || "${CMD_PATH}" == "/dcmd" ]]; then
+  GLOBAL_OPT_PATH="${CMD_PATH}/.options"
+  if [[ -f "${GLOBAL_OPT_PATH}" ]]; then
+      echo ""
+      echo "global options:"
 
-    IFS=$'\n'
-    for OPT_LINE in $(${GLOBAL_OPT_PATH}); do
-        IFS=' '
-        declare -a OPT_COLUMNS
-        OPT_COLUMNS=(${OPT_LINE})
-        if [[ ${#OPT_COLUMNS[@]} -lt 4 ]]; then
-            echo ".options must output lines with at least 4 items separated by space"
-            echo "Example: DRY_RUN -d --dry-run Do a dry run"
-            echo "Invalid line: ${OPT_LINE}"
-            exit 1
-        fi
+      IFS=$'\n'
+      for OPT_LINE in $(${GLOBAL_OPT_PATH}); do
+          IFS=' '
+          declare -a OPT_COLUMNS
+          OPT_COLUMNS=(${OPT_LINE})
+          if [[ ${#OPT_COLUMNS[@]} -lt 4 ]]; then
+              echo ".options must output lines with at least 4 items separated by space"
+              echo "Example: DRY_RUN -d --dry-run Do a dry run"
+              echo "Invalid LINE: ${OPT_LINE}"
+              exit 1
+          fi
 
-        VAR_NAME="${OPT_COLUMNS[0]}"
-        OPT="${OPT_COLUMNS[1]}"
-        LONGOPT="${OPT_COLUMNS[2]}"
-        USAGE="${OPT_COLUMNS[@]:3}"
-        LONGOPT_NOPARAM="$(echo "${LONGOPT}" | sed 's/:$//g')"
+          VAR_NAME="${OPT_COLUMNS[0]}"
+          OPT="${OPT_COLUMNS[1]}"
+          LONGOPT="${OPT_COLUMNS[2]}"
+          USAGE="${OPT_COLUMNS[@]:3}"
+          LONGOPT_NOPARAM="$(echo "${LONGOPT}" | sed 's/:$//g')"
 
-        echo "    ${OPT}, ${LONGOPT_NOPARAM} ${USAGE}"
-    done
-    unset IFS
+          echo "    ${OPT}, ${LONGOPT_NOPARAM} ${USAGE}"
+      done
+      unset IFS
+  fi
+
+  echo ""
+  echo "commands:"
 fi
 
-echo ""
-echo "commands:"
 LONGEST_SUBCMD_NAME="$(ls "${CMD_PATH}" | awk '{ print length($1) }' | sort -nr | head -1)"
+HELP=""
+COMMANDS=""
+PACKAGES=""
+
 for SUBCMD_PATH in $(ls "${CMD_PATH}"); do
     # Skip all non-executable files
     if [[ -f "${CMD_PATH}/${SUBCMD_PATH}" && ! -x "${CMD_PATH}/${SUBCMD_PATH}" ]]; then
         continue
     fi
 
+    # Hide "meta" in help
+    if [[ "${DCMD_NAME}" != "dcmd" && "${CMD_PATH}/${SUBCMD_PATH}" == "/dcmd/meta" ]]; then
+      continue
+    fi
+
     HELP_COMMAND="${CMD_PATH}/.help.${SUBCMD_PATH}"
     SUBFOLDER_HELP_COMMAND="${CMD_PATH}/${SUBCMD_PATH}/.help"
+    SUBFOLDER_HELP_TEXT_FILE="${CMD_PATH}/${SUBCMD_PATH}/.help-txt"
     PADDED_SUBCMD_PATH="$(printf "%-$((${LONGEST_SUBCMD_NAME} + 2))s" ${SUBCMD_PATH})"
+    SYMBOL=" "
+
+    # Add a "+" in front of packages
+    if [[ -d "${CMD_PATH}/${SUBCMD_PATH}" ]]; then
+      SYMBOL="+"
+    fi
+
+    HELP_MESSAGE="  ${SYMBOL} ${PADDED_SUBCMD_PATH}"
+
+    # Use help text from .help.<command> or <command>/.help if they exist
     if [[ -f "${HELP_COMMAND}" ]]; then
-        echo "    ${PADDED_SUBCMD_PATH} $(${HELP_COMMAND} "${CMD_PATH}/${SUBCMD_PATH}" "${SUBCMD_PATH}" --description-only)"
+         HELP_MESSAGE="${HELP_MESSAGE} $(${HELP_COMMAND} "${CMD_PATH}/${SUBCMD_PATH}" "${SUBCMD_PATH}" --description-only)"
     elif [[ -f "${SUBFOLDER_HELP_COMMAND}" ]]; then
-        echo "    ${PADDED_SUBCMD_PATH} $(${SUBFOLDER_HELP_COMMAND} "${CMD_PATH}/${SUBCMD_PATH}" "${SUBCMD_PATH}" --description-only)"
+        HELP_MESSAGE="${HELP_MESSAGE} $(${SUBFOLDER_HELP_COMMAND} "${CMD_PATH}/${SUBCMD_PATH}" "${SUBCMD_PATH}" --description-only)"
+    elif [[ -f "${SUBFOLDER_HELP_TEXT_FILE}" ]]; then
+        HELP_MESSAGE="${HELP_MESSAGE} $(cat "${SUBFOLDER_HELP_TEXT_FILE}")"
+    fi
+
+    # Put "help" at the top the list of commands
+    if [[ "${CMD_PATH}/${SUBCMD_PATH}" == "/dcmd/help" ]]; then
+      HELP="${HELP_MESSAGE}\n"
+      continue
+    fi
+
+    # Separate commands and packages
+    if [[ -d "${CMD_PATH}/${SUBCMD_PATH}" ]]; then
+      # Recurse through all packages if --recursive is set
+      if [[ ! -z "${RECURSIVE:-}" ]]; then
+        # Use <command>/.help with --recursive if it exists, otherwise use "meta help --recursive"
+        if [[ -f "${SUBFOLDER_HELP_COMMAND}" ]]; then
+          SUBCMD_HELP_MESSAGE="$(${SUBFOLDER_HELP_COMMAND} "${CMD_PATH}/${SUBCMD_PATH}" "${SUBCMD_PATH}" --recursive)"
+        else
+          SUBCMD_HELP_MESSAGE="$(dcmd meta help --recursive --no-header "${CMD_PATH}/${SUBCMD_PATH}" "${SUBCMD_PATH}")"
+        fi
+
+        # Indent the output
+        SUBCMD_HELP_MESSAGE="$(IFS=$'\n'; for LINE in ${SUBCMD_HELP_MESSAGE}; do echo "    ${LINE}"; done)"
+        HELP_MESSAGE="${HELP_MESSAGE}\n${SUBCMD_HELP_MESSAGE}"
+      fi
+
+      PACKAGES="${PACKAGES}${HELP_MESSAGE}\n"
     else
-        echo "    ${PADDED_SUBCMD_PATH}"
+      COMMANDS="${COMMANDS}${HELP_MESSAGE}\n"
     fi
 done
+
+echo -en "${HELP}"
+echo -en "${COMMANDS}"
+echo -en "${PACKAGES}"
+exit 0

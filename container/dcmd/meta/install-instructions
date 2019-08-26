@@ -1,2 +1,13 @@
 #!/usr/bin/env bash
-echo "docker run -i --rm ${DCMD_IMAGE} meta create-executable > ${DCMD_NAME} && chmod +x ${DCMD_NAME}"
+cat << EOF | cat
+docker run -i --rm ${DCMD_IMAGE} meta create-executable > ${DCMD_NAME} && \
+  chmod +x ${DCMD_NAME} && \
+  echo "Created executable ./${DCMD_NAME}" && \
+  echo "Create symlink from ./${DCMD_NAME} to /usr/local/bin/${DCMD_NAME} to put it on your PATH." && \
+  printf "Do you want to create symlink automatically? [Y/n] " && \
+  read -r response && [[ ! "\${response}" =~ ^([nN][oO]|[nN])+$ ]] && \
+  (sudo ln -sf "\$(pwd -P)/${DCMD_NAME}" /usr/local/bin/${DCMD_NAME} && \
+    echo -e "Created symlink /usr/local/bin/${DCMD_NAME}.\nRun \"${DCMD_NAME}\" to start" || \
+    echo "ERROR: Failed to create symlink /usr/local/bin/${DCMD_NAME}") || \
+  echo "Run \"./${DCMD_NAME}\" to start"
+EOF
