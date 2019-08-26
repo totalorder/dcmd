@@ -28,7 +28,7 @@ __get_commands_in_dir() {
         return
     fi
     DIR_DEPTH=$(echo "${CMD_DIR}" | grep -o "/" | wc -l)
-    echo -e "${__DCMD_COMPLETION_DIRS}n${__DCMD_COMPLETION_COMMANDS}" | grep "${CMD_DIR}" | cut -d / -f $((${DIR_DEPTH} + 2)) | sort | uniq
+    echo -e "${__DCMD_COMPLETION_DIRS}\n${__DCMD_COMPLETION_COMMANDS}" | grep "${CMD_DIR}" | cut -d / -f $((${DIR_DEPTH} + 2)) | sort | uniq
 }
 
 __dcmd_completions() {

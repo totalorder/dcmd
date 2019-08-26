@@ -1,0 +1,68 @@
+#!/usr/bin/env bash
+__DCMD_COMPLETION_DIRS="/dcmd/meta /dcmd/meta/asd"
+__DCMD_COMPLETION_COMMANDS="/dcmd/meta/install-instructions /dcmd/meta/help /dcmd/meta/update /dcmd/meta/completion-install-instructions /dcmd/meta/asd/qwe /dcmd/meta/version /dcmd/meta/create-executable /dcmd/meta/create-completion"
+__DCMD_COMPLETION_DIRS="$(echo "${__DCMD_COMPLETION_DIRS}" | tr " " "\n")"
+__DCMD_COMPLETION_COMMANDS="$(echo "${__DCMD_COMPLETION_COMMANDS}" | tr " " "\n")"
+
+__get_valid_command_dir() {
+    #declare -a COMP_WORDS
+    COMP_WORDS=("$@")
+    CMD_DIR="/dcmd"
+    echo "COMP_WORDS2: ${COMP_WORDS} - ${COMP_WORDS[@]:1}" >> ~/comp.log
+    for CMD in "${COMP_WORDS[@]:1}"; do
+        echo "CMD: ${CMD}" >> ~/comp.log
+        if [[ -z "${CMD}" ]]; then
+            break
+        fi
+
+        if [[ $(echo "${__DCMD_COMPLETION_COMMANDS}" | grep -x "${CMD_DIR}/${CMD}") ]]; then
+            return
+        elif [[ $(echo "${__DCMD_COMPLETION_DIRS}" | grep -x "${CMD_DIR}/${CMD}") ]]; then
+            CMD_DIR="${CMD_DIR}/${CMD}"
+        else
+            break
+        fi
+    done
+
+    echo "${CMD_DIR}"
+}
+
+__get_commands_in_dir() {
+    CMD_DIR=$1
+    if [[ -z $1 ]]; then
+        return
+    fi
+    DIR_DEPTH=$(echo "${CMD_DIR}" | grep -o "/" | wc -l)
+    echo -e "${__DCMD_COMPLETION_DIRS}\n${__DCMD_COMPLETION_COMMANDS}" | grep "${CMD_DIR}" | cut -d / -f $((${DIR_DEPTH} + 2)) | sort | uniq
+}
+
+
+function __dcmd_completions() {
+    echo "1: $1" >> ~/comp.log
+    local line
+    local state
+
+
+#        "1: :_commands" \
+
+    # completion area for options/arguments
+    _arguments -C \
+        "1: :_commands" \
+        "*::arg:->args"
+#        "*: :()"# \
+
+    declare -a COMP_WORDS
+    COMP_WORDS=("dcmd" "${line[@]}")
+    #_arguments -C "1: world:world hello:hello"
+    echo "line: $line" >> ~/comp.log
+    echo "COMP_WORDS: ${COMP_WORDS} - ${COMP_WORDS[@]:1}" >> ~/comp.log
+    echo "state: $state" >> ~/comp.log
+
+    local R
+    R=($(__get_commands_in_dir $(__get_valid_command_dir "${COMP_WORDS[@]}") | xargs))
+    echo "R: $R" >> ~/comp.log
+    #compadd dcmd
+    compadd -a R
+}
+
+compdef __dcmd_completions dcmd
