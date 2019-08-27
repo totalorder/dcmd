@@ -103,9 +103,9 @@ for SUBCMD_PATH in $(ls "${CMD_PATH}"); do
     PADDED_SUBCMD_PATH="$(printf "%-$((${LONGEST_SUBCMD_NAME} + 2))s" ${SUBCMD_PATH})"
     SYMBOL=" "
 
-    # Add a "+" in front of packages
+    # Add a "•" in front of packages
     if [[ -d "${CMD_PATH}/${SUBCMD_PATH}" ]]; then
-      SYMBOL="+"
+      SYMBOL="•"
     fi
 
     HELP_MESSAGE="  ${SYMBOL} ${PADDED_SUBCMD_PATH}"

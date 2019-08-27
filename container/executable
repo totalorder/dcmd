@@ -2,12 +2,12 @@
 set -o pipefail
 
 # Exit if all prerequisites are not met
-if [[ -z "${DCMD_NAME}}" ]]; then
+if [[ -z "${DCMD_NAME}" ]]; then
     echo "DCMD_NAME must be set" >&2
     exit 1
 fi
 
-if [[ -z "${DCMD_IMAGE}}" ]]; then
+if [[ -z "${DCMD_IMAGE}" ]]; then
     echo "DCMD_IMAGE must be set" >&2
     exit 1
 fi
@@ -141,12 +141,17 @@ fi
 
 # DCMD_EXECUTABLE_EXTRAS_PLACEHOLDER - This line will be replaced by the contents of /.executable-extras in the container
 
+# Tell docker whether we are running in a tty or not
+TTY=""
+if [[ -t 1 && -t 0 ]]; then
+  TTY="-t"
+fi
 
-docker run -it \
+docker run -i ${TTY} \
     ${DCMD_EXTRA_DOCKER_OPTIONS} \
     ${DOCKER_SOCKET_OPTIONS} \
     ${SSH_KNOWN_HOSTS_OPTIONS} \
     ${SSH_AGENT_OPTIONS} \
     ${USER_OPTIONS} \
     --volume "$(pwd):/cwd" \
-    "${DCMD_IMAGE}" "$@" | tr -d '\r' | cat
+    "${DCMD_IMAGE}" "$@"
