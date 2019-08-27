@@ -22,11 +22,6 @@ if [[ $(docker version 2>&1 > /dev/null) ]]; then
     exit 1
 fi
 
-if [[ ! $(command -v wget) ]]; then
-    echo "wget is required to run ${DCMD_NAME}. Please install wget and make sure it's available on your PATH" >&2
-    exit 1
-fi
-
 # Create config dir in ~/.config
 CONFIG_DIR="$HOME/.config/${DCMD_NAME}"
 mkdir -p "${CONFIG_DIR}"
@@ -110,25 +105,8 @@ if [[ -f "${LAST_UPDATE_FAILED_FILE}" ]]; then
     fi
 fi
 
-# Mount docker socket into container if available
-DOCKER_SOCKET_OPTIONS=""
-if [[ -S "/var/run/docker.sock" ]]; then
-    DOCKER_SOCKET_OPTIONS="--volume /var/run/docker.sock:/var/run/docker.sock"
-fi
-
-# Mount .ssh/known_hosts into container if available
-SSH_KNOWN_HOSTS_OPTIONS=""
-if [[ -f "$HOME/.ssh/known_hosts" ]]; then
-    SSH_KNOWN_HOSTS_OPTIONS="--volume $HOME/.ssh/known_hosts:/root/.ssh/known_hosts"
-fi
-
-# Mount ssh-agent into container if available
-SSH_AGENT_OPTIONS=""
-if [[ ! -z "${SSH_AUTH_SOCK:-}" ]]; then
-    SSH_AGENT_OPTIONS="--volume ${SSH_AUTH_SOCK}:/ssh-agent --env SSH_AUTH_SOCK=/ssh-agent"
-fi
-
-# Used by executable-extras to find the users home dir
+# Used to find the users home dir inside the container
+# DCMD_EXECUTABLE_EXTRAS_PLACEHOLDER depends on this
 DCMD_HOME="/root"
 
 # Run as current user if current user has uid:guid 1000:1000
@@ -137,6 +115,30 @@ if [[ "$(id -u)" == "1000" && "$(id -g)" == "1000" ]]; then
    DCMD_HOME="/home/dcmd"
 elif [[ "$OSTYPE" == "linux-gnu" ]]; then
     echo "warn: uid doesn't match container. Files written from container will be owned by root" >&2
+fi
+
+# Mount docker socket into container if available
+DOCKER_SOCKET_OPTIONS=""
+if [[ -S "/var/run/docker.sock" ]]; then
+    DOCKER_SOCKET_OPTIONS="--volume /var/run/docker.sock:/var/run/docker.sock"
+fi
+
+# Mount .ssh/config into container if available
+SSH_CONFIG=""
+if [[ -f "$HOME/.ssh/config" ]]; then
+    SSH_CONFIG="--volume $HOME/.ssh/config:${DCMD_HOME}/.ssh/config"
+fi
+
+# Mount .ssh/known_hosts into container if available
+SSH_KNOWN_HOSTS_OPTIONS=""
+if [[ -f "$HOME/.ssh/known_hosts" ]]; then
+    SSH_KNOWN_HOSTS_OPTIONS="--volume $HOME/.ssh/known_hosts:${DCMD_HOME}/.ssh/known_hosts"
+fi
+
+# Mount ssh-agent into container if available
+SSH_AGENT_OPTIONS=""
+if [[ ! -z "${SSH_AUTH_SOCK:-}" ]]; then
+    SSH_AGENT_OPTIONS="--volume ${SSH_AUTH_SOCK}:/ssh-agent --env SSH_AUTH_SOCK=/ssh-agent"
 fi
 
 # DCMD_EXECUTABLE_EXTRAS_PLACEHOLDER - This line will be replaced by the contents of /.executable-extras in the container
@@ -150,6 +152,7 @@ fi
 docker run -i ${TTY} \
     ${DCMD_EXTRA_DOCKER_OPTIONS} \
     ${DOCKER_SOCKET_OPTIONS} \
+    ${SSH_CONFIG} \
     ${SSH_KNOWN_HOSTS_OPTIONS} \
     ${SSH_AGENT_OPTIONS} \
     ${USER_OPTIONS} \
