@@ -149,6 +149,68 @@ if [[ -t 1 && -t 0 ]]; then
   TTY="-t"
 fi
 
+# Check if system supports a way to open things like urls, files etc. and if netcat is avaialble
+# to recieve the open commands.
+XDG_OPEN_COMMAND=""
+if [[ $(command -v nc) ]]; then
+  if [[ $(command -v xdg-open) ]]; then
+    XDG_OPEN_COMMAND="xdg-open"
+  elif [[ $(command -v open) ]]; then
+    XDG_OPEN_COMMAND="open"
+  fi
+fi
+
+# Listen for open commands from within the container with netcat and execute the open-command
+XDG_OPEN_OTIONS=""
+if [[ -n "${XDG_OPEN_COMMAND}" ]]; then
+  function __get_available_port(){
+      LOWER_PORT=32768
+      UPPER_PORT=60999
+
+      while true; do
+          PORT="$((LOWER_PORT + (RANDOM % UPPER_PORT)))"
+
+          nc -z localhost "${PORT}"
+          if [[ $? != 0 ]]; then
+              echo ${PORT}
+              return 0
+          fi
+      done
+  }
+
+  XDG_OPEN_PORT="$(__get_available_port)"
+
+  # Start a netcat listener that triggers open-command for each line received. Needs to be in its
+  # own shell to make sure we can reliably kill it and its decendants when doing cleanup.
+  bash -c "nc -lk ${XDG_OPEN_PORT} | while IFS= read -r line; do ${XDG_OPEN_COMMAND} \$line; done" &
+  XDG_PID=$!
+
+  # Disown the background job so we don't get messages printed when it exits
+  disown
+
+  # Trap the exit signal and stop the listener when the dcmd-command exits
+  __xdg_open_listener_cleanup() {
+    __xdg_open_listener_cleanup_background() {
+      # Get the process group id of the listener, to be able to kill all decendants
+      PGID="$(ps -o pgid=" " ${XDG_PID} | grep -o "[0-9]*")"
+
+      # Wait a while since there might be things in the pipe not xdg-opened yet
+      sleep 5
+
+      # Kill the listener and all its decendants
+      kill -- "-${PGID}" 2> /dev/null
+    }
+
+    # Do the cleanup in the background so the current terminal is not blocked
+    __xdg_open_listener_cleanup_background &
+    disown
+  }
+  trap __xdg_open_listener_cleanup EXIT
+
+  # Set the XDG_OPEN_PORT env var which will be picked up from within the container
+  XDG_OPEN_OTIONS="--env XDG_OPEN_PORT=${XDG_OPEN_PORT}"
+fi
+
 docker run -i ${TTY} \
     ${DCMD_EXTRA_DOCKER_OPTIONS} \
     ${DOCKER_SOCKET_OPTIONS} \
@@ -156,5 +218,6 @@ docker run -i ${TTY} \
     ${SSH_KNOWN_HOSTS_OPTIONS} \
     ${SSH_AGENT_OPTIONS} \
     ${USER_OPTIONS} \
+    ${XDG_OPEN_OTIONS} \
     --volume "$(pwd):/cwd" \
     "${DCMD_IMAGE}" "$@"

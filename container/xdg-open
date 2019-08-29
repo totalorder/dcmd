@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+if [[ -z "${XDG_OPEN_PORT}" ]]; then
+  echo "A call to xdg-open/open for \"$@\" was made but it's not available on your host system." >&2
+  exit 1
+fi
+
+if [[ ! $(command -v ip) ]]; then
+  echo "A call to xdg-open/open for \"$@\" was made but iproute2 is not available in this distribtion." >&2
+  exit 1
+fi
+
+if [[ ! $(command -v nc) ]]; then
+  echo "A call to xdg-open/open for \"$@\" was made but netcat-openbsd is not available in this distribtion." >&2
+  exit 1
+fi
+
+EXTERNAL_IP="$(getent hosts docker.for.mac.localhost | cut -d' ' -f1)"
+if [[ "${EXTERNAL_IP}" == "127.0.0.1" || "${EXTERNAL_IP}" == "::1" ]]; then
+  EXTERNAL_IP="$(ip route|awk '/default/ { print $3 }')"
+fi
+
+echo "$@" | nc -N "${EXTERNAL_IP}" "${XDG_OPEN_PORT}"

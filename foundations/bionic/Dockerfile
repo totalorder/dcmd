@@ -1,6 +1,6 @@
 FROM ubuntu:bionic
 
-RUN apt update && apt install -y sudo
+RUN apt update && apt install -y sudo netcat-openbsd
 
 ARG USER_ID=1000
 ARG GROUP_ID=1000

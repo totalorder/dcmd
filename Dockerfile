@@ -19,7 +19,8 @@ ADD container/shared /shared
 ADD container/executable /.executable
 ADD container/executable-extras /.executable-extras
 ADD container/bash-completion /.bash-completion
-
+ADD container/xdg-open /usr/local/bin/xdg-open
+RUN ln -s /usr/local/bin/xdg-open /usr/local/bin/open
 ARG DCMD_VERSION="unknown"
 RUN echo "${DCMD_VERSION}" > /.version
 

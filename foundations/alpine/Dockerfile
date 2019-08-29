@@ -1,6 +1,6 @@
 FROM alpine:3.7
 
-RUN apk add --no-cache bash sudo
+RUN apk add --no-cache bash sudo netcat-openbsd
 
 ARG USER_ID=1000
 ARG GROUP_ID=1000
