@@ -54,12 +54,14 @@ __update_dcmd() {
         return 1
     fi
 
+    echo "Updating executable..."
     CURRENT_EXECUTABLE="${BASH_SOURCE[0]}"
     if [[ ! -f "${CURRENT_EXECUTABLE}" ]]; then
         echo "error: Update failed, could not locate current executable" >&2
         __update_dcmd_failed
         return 1
     fi
+
     TARGET_EXECUTABLE_CONTENT="$(docker run --rm -i "${DCMD_IMAGE}" meta create-executable)"
     if [[ -z "${TARGET_EXECUTABLE_CONTENT}" ]] || [[ "$(echo "${TARGET_EXECUTABLE_CONTENT}" | wc -l)" -lt 10 ]]; then
         echo "error: Update failed, could get new executable" >&2
@@ -89,11 +91,13 @@ if [[ "$1 $2" == "meta update" ]]; then
     exit $?
 fi
 
+UPDATE_JOB_PID=""
 # Run a silent update every hour, outputting logs into UPDATE_LOG_FILE
 if [[ -z "${DCMD_DISABLE_UPDATE:-}" ]] && [[ ! -f "${LAST_UPDATE_CHECK_FILE}" || $(($(date +%s)-$(cat "${LAST_UPDATE_CHECK_FILE}"))) -gt $((60*60)) ]]; then
     echo "$(date +%s)" > "${LAST_UPDATE_CHECK_FILE}"
     # Run update as background job
     __update_dcmd > "${UPDATE_LOG_FILE}" 2>&1 &
+    UPDATE_JOB_PID=$!
 fi
 
 # Warn if update failed more than twice in a row, then reset failure count
@@ -196,6 +200,12 @@ if [[ -n "${XDG_OPEN_COMMAND}" ]]; then
 
       # Wait a while since there might be things in the pipe not xdg-opened yet
       sleep 5
+
+      # Wait for the update job to complete so it doesn't get killed before it's completed
+      # The bash command "wait" cannot be used since UPDATE_JOB_PID is not a a child of this shell
+      while [[ -e /proc/${UPDATE_JOB_PID} ]]; do
+        sleep 1
+      done
 
       # Kill the listener and all its decendants
       kill -- "-${PGID}" 2> /dev/null
