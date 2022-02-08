@@ -113,12 +113,15 @@ fi
 # DCMD_EXECUTABLE_EXTRAS_PLACEHOLDER depends on this
 DCMD_HOME="/root"
 
-# Run as current user if current user has uid:guid 1000:1000
-if [[ "$(id -u)" == "1000" && "$(id -g)" == "1000" ]]; then
-   USER_OPTIONS="--user 1000:1000"
-   DCMD_HOME="/home/dcmd"
-elif [[ "$OSTYPE" == "linux-gnu" ]]; then
-    echo "warn: uid doesn't match container. Files written from container will be owned by root" >&2
+# Run as current user if running on linux
+# This will make sure files created from within the container is owned by the current user
+if [[ "$OSTYPE" == "linux-gnu" ]]; then
+    USER_ID="$(id -u)"
+    GROUP_ID="$(id -g)"
+    USER_OPTIONS="--user $USER_ID:$GROUP_ID
+                  --volume=/etc/group:/etc/group:ro
+                  --volume=/etc/passwd:/etc/passwd:ro
+                  --volume=/etc/shadow:/etc/shadow:ro"
 fi
 
 # Mount docker socket into container if available
