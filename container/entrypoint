@@ -11,6 +11,25 @@ if [[ -z "${DCMD_IMAGE:-}" ]]; then
     exit 1
 fi
 
+# If the DCMD_EXECUTABLE is set it means that we are invoked by ./executable
+# This means that we can assume volumes are mounted etc.
+if [[ -n "${DCMD_EXECUTABLE:-}" ]]; then
+  if [[ -z "${DCMD_HOME:-}" ]]; then
+      echo "DCMD_HOME must be set" >&2
+      exit 1
+  fi
+
+  # If the home directory doesn't exist it means that docker was started with the --user flag
+  # This is done on linux to make sure that files written from within the container gets owned by the current user
+  # instead of root.
+  # In this case we need to change the ownership of all volumes mounted into $DCMD_HOME to the current user, and
+  # symlink $DCMD_HOME to the user's $HOME. This is to make sure that for example ~/.ssh/config etc is loaded properly
+  if [[ ! -d "$HOME" ]]; then
+    sudo chown -R "$(id -u -n):$(id -g -n)" "${DCMD_HOME}"
+    sudo ln -s "${DCMD_HOME}" "$HOME"
+  fi
+fi
+
 EXECUTABLE="/usr/local/bin/${DCMD_NAME}"
 [[ ! -f "${EXECUTABLE}" ]] && sudo ln -s /entrypoint "${EXECUTABLE}"
 

@@ -110,7 +110,7 @@ if [[ -f "${LAST_UPDATE_FAILED_FILE}" ]]; then
 fi
 
 # Used to find the users home dir inside the container
-# DCMD_EXECUTABLE_EXTRAS_PLACEHOLDER depends on this
+# The user supplied /.executable-extras depends on this
 DCMD_HOME="/root"
 
 # Run as current user if running on linux
@@ -232,5 +232,7 @@ docker run -i ${TTY} \
     ${SSH_AGENT_OPTIONS} \
     ${USER_OPTIONS} \
     ${XDG_OPEN_OTIONS} \
+    -e DCMD_EXECUTABLE=y \
+    -e DCMD_HOME="${DCMD_HOME}" \
     --volume "$(pwd):/cwd" \
     "${DCMD_IMAGE}" "$@"
