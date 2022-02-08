@@ -9,15 +9,17 @@ fi
 
 set -e
 FOUNDATION=$1
+shift
 DCMD_BASE="totalorder/dcmd-${FOUNDATION}"
 
-if [[ $2 != "--no-foundation" ]]; then
+if [[ $1 != "--no-foundation" ]]; then
     ./build-foundation "${FOUNDATION}"
 else
+    shift
     DCMD_FOUNDATION="totalorder/dcmd-foundation-${FOUNDATION}" DCMD_BASE="totalorder/dcmd-${FOUNDATION}" ./build
 fi
 
-bash -c "$(docker run -i "${DCMD_BASE}" meta install-instructions)"
+bash -c "$(docker run -i "${DCMD_BASE}" meta install-instructions "$@")"
 if [[ $? != 0 ]]; then
     echo "Failed to create executable ./dcmd with install instructions: $(docker run -i "${DCMD_BASE}" meta install-instructions)"
 fi
