@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 cat << EOF | cat
-docker run -i --rm ${DCMD_IMAGE} meta create-executable > ${DCMD_NAME} && \
-  chmod +x ${DCMD_NAME} && \
-  echo "Created executable ./${DCMD_NAME} in the current working directory." && \
+mkdir -p "\$HOME/${DCMD_NAME}" && \
+  docker run -i --rm ${DCMD_IMAGE} meta create-executable > "\$HOME/${DCMD_NAME}/${DCMD_NAME}" && \
+  chmod +x "\$HOME/${DCMD_NAME}/${DCMD_NAME}" && \
+  echo "Installed executable to \$HOME/${DCMD_NAME}/${DCMD_NAME}" && \
   if [ "$1" == "--non-interactive" ]; then exit 0; fi && \
-  echo "Create symlink from ./${DCMD_NAME} to /usr/local/bin/${DCMD_NAME} to put it on your PATH." && \
-  printf "Do you want to create symlink automatically? [Y/n] " && \
+  printf "Do you want \"${DCMD_NAME}\" added to your path? [Y/n] " && \
   read -r response && [[ ! "\${response}" =~ ^([nN][oO]|[nN])+$ ]] && \
-  (sudo ln -sf "\$(pwd -P)/${DCMD_NAME}" /usr/local/bin/${DCMD_NAME} && \
-    echo -e "Created symlink /usr/local/bin/${DCMD_NAME}.\nRun \"${DCMD_NAME}\" to start" || \
+  (sudo ln -sf "\$HOME/${DCMD_NAME}/${DCMD_NAME}" /usr/local/bin/${DCMD_NAME} && \
+    echo -e "Created symlink from /usr/local/bin/${DCMD_NAME} to \$HOME/${DCMD_NAME}/${DCMD_NAME}.\nRun \"${DCMD_NAME}\" to start" || \
     echo "ERROR: Failed to create symlink /usr/local/bin/${DCMD_NAME}") || \
-  echo "Run \"./${DCMD_NAME}\" to start"
+  echo "Run \"~/${DCMD_NAME}/${DCMD_NAME}\" to start"
 EOF

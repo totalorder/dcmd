@@ -35,6 +35,13 @@ EXECUTABLE="/usr/local/bin/${DCMD_NAME}"
 
 CMD_PATH="/dcmd"
 CMD_NAME="${DCMD_NAME}"
+
+# Print help and exit if "--help" is the first option
+if [[ "${1:-}" == "--help" ]]; then
+    dcmd help
+    exit 0
+fi
+
 while (($#)); do
     GLOBAL_OPT_PATH="${CMD_PATH}/.options"
     if [[ -f "${GLOBAL_OPT_PATH}" ]]; then
