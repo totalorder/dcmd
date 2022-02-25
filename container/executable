@@ -133,7 +133,14 @@ fi
 # Mount .ssh/config into container if available
 SSH_CONFIG=""
 if [[ -f "$HOME/.ssh/config" ]]; then
-    SSH_CONFIG="--volume $HOME/.ssh/config:${DCMD_HOME}/.ssh/config"
+    if [[ "$OSTYPE" == "linux-gnu" ]]; then
+        SSH_CONFIG="--volume $HOME/.ssh/config:${DCMD_HOME}/.ssh/config"
+    else
+        # The openssh in OSX has special parameters not supported by openssh in Linux. Mount into
+        # ~/.ssh/config.original and let the entrypoint-script create a modified version of the conf that's compatible
+        # with Linux openssh
+        SSH_CONFIG="--volume $HOME/.ssh/config:${DCMD_HOME}/.ssh/config.original"
+    fi
 fi
 
 # Mount .ssh/known_hosts into container if available
@@ -156,20 +163,27 @@ if [[ -t 1 && -t 0 ]]; then
   TTY="-t"
 fi
 
-# Check if system supports a way to open things like urls, files etc. and if netcat is avaialble
-# to recieve the open commands.
+# Only allow federated xdg-open if an environment variable is set. This is because the use of "nc" might trigger
+# firewall warnings, which is unnecessary if the functionality is not used
+ALLOW_OPEN_VARAIBLE_NAME="${DCMD_NAME^^}_ALLOW_OPEN"
+ALLOW_OPEN="${!ALLOW_OPEN_VARAIBLE_NAME}"
+
 XDG_OPEN_COMMAND=""
-if [[ $(command -v nc) ]]; then
-  if [[ $(command -v xdg-open) ]]; then
-    XDG_OPEN_COMMAND="xdg-open"
-  elif [[ $(command -v open) ]]; then
-    XDG_OPEN_COMMAND="open"
+if [[ -n "${ALLOW_OPEN}" ]]; then
+  # Check if system supports a way to open things like urls, files etc., and if netcat is available
+  # to receive the open commands.
+  if [[ $(command -v nc) ]]; then
+    if [[ $(command -v xdg-open) ]]; then
+      XDG_OPEN_COMMAND="xdg-open"
+    elif [[ $(command -v open) ]]; then
+      XDG_OPEN_COMMAND="open"
+    fi
   fi
 fi
 
-# Listen for open commands from within the container with netcat and execute the open-command
-XDG_OPEN_OTIONS=""
-if [[ -n "${XDG_OPEN_COMMAND}" ]]; then
+# When ALLOW_OPEN is set, listen for open commands from within the container with netcat and execute the open-command
+XDG_OPEN_OPTIONS=""
+if [[ -n "${ALLOW_OPEN}" ]] && [[ -n "${XDG_OPEN_COMMAND}" ]]; then
   function __get_available_port(){
       LOWER_PORT=32768
       UPPER_PORT=60999
@@ -221,7 +235,7 @@ if [[ -n "${XDG_OPEN_COMMAND}" ]]; then
   trap __xdg_open_listener_cleanup EXIT
 
   # Set the XDG_OPEN_PORT env var which will be picked up from within the container
-  XDG_OPEN_OTIONS="--env XDG_OPEN_PORT=${XDG_OPEN_PORT}"
+  XDG_OPEN_OPTIONS="--env XDG_OPEN_PORT=${XDG_OPEN_PORT}"
 fi
 
 docker run -i ${TTY} \
@@ -231,7 +245,7 @@ docker run -i ${TTY} \
     ${SSH_KNOWN_HOSTS_OPTIONS} \
     ${SSH_AGENT_OPTIONS} \
     ${USER_OPTIONS} \
-    ${XDG_OPEN_OTIONS} \
+    ${XDG_OPEN_OPTIONS} \
     -e DCMD_EXECUTABLE=y \
     -e DCMD_HOME="${DCMD_HOME}" \
     --volume "$(pwd):/cwd" \

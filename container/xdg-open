@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
 if [[ -z "${XDG_OPEN_PORT}" ]]; then
-  echo "A call to xdg-open/open for \"$@\" was made but it's not available on your host system." >&2
+  echo "A call to xdg-open/open for \"$@\" was made but it's not allowed. Set ${DCMD_NAME^^}_ALLOW_OPEN=y to enable it." >&2
   exit 1
 fi
 
 if [[ ! $(command -v ip) ]]; then
-  echo "A call to xdg-open/open for \"$@\" was made but iproute2 is not available in this distribtion." >&2
+  echo "A call to xdg-open/open for \"$@\" was made but iproute2 is not available in this distribution." >&2
   exit 1
 fi
 
 if [[ ! $(command -v nc) ]]; then
-  echo "A call to xdg-open/open for \"$@\" was made but netcat-openbsd is not available in this distribtion." >&2
+  echo "A call to xdg-open/open for \"$@\" was made but netcat-openbsd is not available in this distribution." >&2
   exit 1
 fi
 

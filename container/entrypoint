@@ -28,6 +28,13 @@ if [[ -n "${DCMD_EXECUTABLE:-}" ]]; then
     sudo chown -R "$(id -u -n):$(id -g -n)" "${DCMD_HOME}"
     sudo ln -s "${DCMD_HOME}" "$HOME"
   fi
+
+  # The openssh in OSX has special parameters not supported by openssh in Linux
+  # Prepend IgnoreUnknown-conf to the ~/.ssh/config if the execute script has detected OSX
+  if [[ -f "$HOME/.ssh/config.original" ]]; then
+    printf "IgnoreUnknown AddKeysToAgent,UseKeychain\n" >| "$HOME/.ssh/config"
+    cat "$HOME/.ssh/config.original" >> "$HOME/.ssh/config"
+  fi
 fi
 
 EXECUTABLE="/usr/local/bin/${DCMD_NAME}"
