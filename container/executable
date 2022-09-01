@@ -115,14 +115,14 @@ DCMD_HOME="/root"
 
 # Run as current user if running on linux
 # This will make sure files created from within the container is owned by the current user
-if [[ "$OSTYPE" == "linux-gnu" ]]; then
-    USER_ID="$(id -u)"
-    GROUP_ID="$(id -g)"
-    USER_OPTIONS="--user $USER_ID:$GROUP_ID
-                  --volume=/etc/group:/etc/group:ro
-                  --volume=/etc/passwd:/etc/passwd:ro
-                  --volume=/etc/shadow:/etc/shadow:ro"
-fi
+#if [[ "$OSTYPE" == "linux-gnu" ]]; then
+#    USER_ID="$(id -u)"
+#    GROUP_ID="$(id -g)"
+#    USER_OPTIONS="--user $USER_ID:$GROUP_ID
+#                  --volume=/etc/group:/etc/group:ro
+#                  --volume=/etc/passwd:/etc/passwd:ro
+#                  --volume=/etc/shadow:/etc/shadow:ro"
+#fi
 
 # Mount docker socket into container if available
 DOCKER_SOCKET_OPTIONS=""
@@ -133,14 +133,15 @@ fi
 # Mount .ssh/config into container if available
 SSH_CONFIG=""
 if [[ -f "$HOME/.ssh/config" ]]; then
-    if [[ "$OSTYPE" == "linux-gnu" ]]; then
-        SSH_CONFIG="--volume $HOME/.ssh/config:${DCMD_HOME}/.ssh/config"
-    else
+#    if [[ "$OSTYPE" == "linux-gnu" ]]; then
+#        SSH_CONFIG="--volume $HOME/.ssh/config:${DCMD_HOME}/.ssh/config:ro"
+#    else
         # The openssh in OSX has special parameters not supported by openssh in Linux. Mount into
         # ~/.ssh/config.original and let the entrypoint-script create a modified version of the conf that's compatible
         # with Linux openssh
-        SSH_CONFIG="--volume $HOME/.ssh/config:${DCMD_HOME}/.ssh/config.original"
-    fi
+#        SSH_CONFIG="--volume $HOME/.ssh/config:${DCMD_HOME}/.ssh/config.original:ro"
+      SSH_CONFIG="--volume $HOME/.ssh/config:/tmp/.ssh/config:ro"
+#    fi
 fi
 
 # Mount .ssh/known_hosts into container if available
@@ -151,8 +152,15 @@ fi
 
 # Mount ssh-agent into container if available
 SSH_AGENT_OPTIONS=""
-if [[ ! -z "${SSH_AUTH_SOCK:-}" ]]; then
-    SSH_AGENT_OPTIONS="--volume ${SSH_AUTH_SOCK}:/ssh-agent --env SSH_AUTH_SOCK=/ssh-agent"
+
+if [[ "$OSTYPE" == "linux-gnu" ]]; then
+  if [[ ! -z "${SSH_AUTH_SOCK:-}" ]]; then
+      SSH_AGENT_OPTIONS="--volume ${SSH_AUTH_SOCK}:/ssh-agent --env SSH_AUTH_SOCK=/ssh-agent"
+  fi
+else
+  # OSX has the weirdest thing where this non-existent file makes things work: /run/host-services/ssh-auth.sock
+  # No one knows why
+  SSH_AGENT_OPTIONS="--volume /run/host-services/ssh-auth.sock:/run/host-services/ssh-auth.sock -e SSH_AUTH_SOCK=/run/host-services/ssh-auth.sock"
 fi
 
 # DCMD_EXECUTABLE_EXTRAS_PLACEHOLDER - This line will be replaced by the contents of /.executable-extras in the container
@@ -165,7 +173,7 @@ fi
 
 # Only allow federated xdg-open if an environment variable is set. This is because the use of "nc" might trigger
 # firewall warnings, which is unnecessary if the functionality is not used
-ALLOW_OPEN_VARAIBLE_NAME="${DCMD_NAME^^}_ALLOW_OPEN"
+ALLOW_OPEN_VARAIBLE_NAME="$(echo "${DCMD_NAME}" | tr '[:lower:]' '[:upper:]')_ALLOW_OPEN"
 ALLOW_OPEN="${!ALLOW_OPEN_VARAIBLE_NAME}"
 
 XDG_OPEN_COMMAND=""
@@ -248,5 +256,6 @@ docker run -i ${TTY} \
     ${XDG_OPEN_OPTIONS} \
     -e DCMD_EXECUTABLE=y \
     -e DCMD_HOME="${DCMD_HOME}" \
+    -e DCMD_HOST_USER="$USER" \
     --volume "$(pwd):/cwd" \
     "${DCMD_IMAGE}" "$@"

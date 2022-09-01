@@ -19,6 +19,11 @@ if [[ -n "${DCMD_EXECUTABLE:-}" ]]; then
       exit 1
   fi
 
+  if [[ -z "${DCMD_HOST_USER:-}" ]]; then
+      echo "DCMD_HOST_USER must be set" >&2
+      exit 1
+  fi
+
   # If the home directory doesn't exist it means that docker was started with the --user flag
   # This is done on linux to make sure that files written from within the container gets owned by the current user
   # instead of root.
@@ -29,11 +34,21 @@ if [[ -n "${DCMD_EXECUTABLE:-}" ]]; then
     sudo ln -s "${DCMD_HOME}" "$HOME"
   fi
 
-  # The openssh in OSX has special parameters not supported by openssh in Linux
-  # Prepend IgnoreUnknown-conf to the ~/.ssh/config if the execute script has detected OSX
-  if [[ -f "$HOME/.ssh/config.original" ]]; then
-    printf "IgnoreUnknown AddKeysToAgent,UseKeychain\n" >| "$HOME/.ssh/config"
-    cat "$HOME/.ssh/config.original" >> "$HOME/.ssh/config"
+  if [[ -f "/tmp/.ssh/config" ]]; then
+    # When running as root we add the external user as the default user for all ssh-connections
+    if [[ "$EUID" == 0 ]]; then
+      printf "Host *\n    User ${DCMD_HOST_USER}\n" >> "$HOME/.ssh/config"
+    fi
+    # The openssh in OSX has special parameters not supported by openssh in Linux
+    # Prepend IgnoreUnknown-conf to the ~/.ssh/config if the execute script has detected OSX
+    printf "IgnoreUnknown AddKeysToAgent,UseKeychain\n" >> "$HOME/.ssh/config"
+
+    cat "/tmp/.ssh/config" | grep -iv "IdentityFile" >> "$HOME/.ssh/config"
+#  else [[ ! -f "$HOME/.ssh/config" ]];
+#    # When running as root we add the external user as the default user for all ssh-connections
+#    if [[ "$EUID" == 0 ]]; then
+#      printf "Host *\n    User ${DCMD_HOST_USER}\n" >> "$HOME/.ssh/config"
+#    fi
   fi
 fi
 
